@@ -8,4 +8,5 @@ golang test
 |---------------------------------|----------------------|--------------------------------------------------------------------------|
 | 20190717-profile                | profile 工具概览      | [profilinggo](https://github.com/samonzeweb/profilinggo)                 |
 | 20190718-profiling-go-programs  | profile 工具概览      | [profiling-go-programs](https://blog.golang.org/profiling-go-programs)   |
-| 20190718-profiling-go-programs  | Go mysql mock      | [使用 Gomock 进行单元测试](https://segmentfault.com/a/1190000017132133)   |
+| 20190809-gomock  | Go mysql mock      | [使用 Gomock 进行单元测试](https://segmentfault.com/a/1190000017132133)   |
+| 20190929-share-memory-by-communicating  | Go Channel      | [Share Memory By Communicating](https://blog.golang.org/share-memory-by-communicating)   |
