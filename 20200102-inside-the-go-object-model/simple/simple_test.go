@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/cyningsun/go-test/20200102-inside-golang-object-model/face"
+	"github.com/cyningsun/go-test/20200102-inside-the-go-object-model/face"
 	"github.com/davecgh/go-spew/spew"
 )
 
