@@ -1,0 +1,9 @@
+syntax = "proto2";
+package pb;
+
+
+message Person {
+    optional uint64 id = 1;
+    optional string name = 2;
+    optional uint32 age = 3;
+}
