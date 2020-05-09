@@ -20,7 +20,7 @@ import (
 const tpl = `
 package {{.pkg}}
 
-var {{.typ}}Map = map[uint32] string {
+var {{.typ}}Map = map[uint32] {{.typ}} {
 	{{range $name,$val :=.vars}}{{$name}}: {{$val}},
 	{{end}}
 }
