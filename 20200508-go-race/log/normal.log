@@ -1,0 +1,55 @@
+server is listening on 8080
+2020/05/11 19:56:32 http: panic serving 127.0.0.1:59816: runtime error: index out of range
+goroutine 20 [running]:
+net/http.(*conn).serve.func1(0xc00015e0a0)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1769 +0x139
+panic(0x13c1cc0, 0x175ad90)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/runtime/panic.go:522 +0x1b5
+github.com/cyningsun/go-test/20200508-go-race/pb.encodeVarintPerson(0xc000228ec0, 0x3c, 0x3c, 0x3c, 0x1f, 0x3b)
+	/Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:146 +0x6a
+github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).MarshalTo(0xc0000bc040, 0xc000228ec0, 0x3c, 0x3c, 0x11, 0x2, 0xc00005bb78)
+	/Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:131 +0x1b8
+github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).XXX_Marshal(0xc0000bc040, 0xc000228ec0, 0x0, 0x3c, 0xc0000bc000, 0xc00005bc01, 0x119fab4, 0xc0000d5690, 0xade1e3f6, 0x1767000)
+	/Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:47 +0x5b
+github.com/gogo/protobuf/proto.Marshal(0x14af2e0, 0xc0000bc040, 0x1, 0x140e400, 0xc0000bc040, 0xc00015c001, 0x0)
+	/Users/yinhang.sun/Documents/workspace/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/table_marshal.go:2940 +0x2d6
+main.Read(0x14af960, 0xc000407500, 0xc00047e000)
+	/Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:49 +0xb0
+net/http.HandlerFunc.ServeHTTP(0x143e930, 0x14af960, 0xc000407500, 0xc00047e000)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1766f20, 0x14af960, 0xc000407500, 0xc00047e000)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x1d6
+net/http.serverHandler.ServeHTTP(0xc0000a4340, 0x14af960, 0xc000407500, 0xc00047e000)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xa8
+net/http.(*conn).serve(0xc00015e0a0, 0x14b0360, 0xc000026240)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x851
+created by net/http.(*Server).Serve
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x2f4
+2020/05/11 19:56:32 http: panic serving 127.0.0.1:59820: runtime error: index out of range
+goroutine 1444 [running]:
+net/http.(*conn).serve.func1(0xc000104960)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1769 +0x139
+panic(0x13c1cc0, 0x175ad90)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/runtime/panic.go:522 +0x1b5
+github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).MarshalTo(0xc0000bc040, 0xc00017e000, 0x26, 0x26, 0x12, 0x2, 0xc000216b78)
+	/Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:124 +0x358
+github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).XXX_Marshal(0xc0000bc040, 0xc00017e000, 0x0, 0x26, 0xc0000bc000, 0xc000216c01, 0x119fab4, 0xc0000d5690, 0xb17a1b3e, 0x1767000)
+	/Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:47 +0x5b
+github.com/gogo/protobuf/proto.Marshal(0x14af2e0, 0xc0000bc040, 0x1, 0x140e400, 0xc0000bc040, 0xc000419001, 0x0)
+	/Users/yinhang.sun/Documents/workspace/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/table_marshal.go:2940 +0x2d6
+main.Read(0x14af960, 0xc0005a42a0, 0xc00058a400)
+	/Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:49 +0xb0
+net/http.HandlerFunc.ServeHTTP(0x143e930, 0x14af960, 0xc0005a42a0, 0xc00058a400)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1766f20, 0x14af960, 0xc0005a42a0, 0xc00058a400)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x1d6
+net/http.serverHandler.ServeHTTP(0xc0000a4340, 0x14af960, 0xc0005a42a0, 0xc00058a400)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xa8
+net/http.(*conn).serve(0xc000104960, 0x14b0360, 0xc00042e740)
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x851
+created by net/http.(*Server).Serve
+	/usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x2f4
+
+...
+
+signal: interrupt
