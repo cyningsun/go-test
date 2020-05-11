@@ -1,0 +1,245 @@
+server is listening on 8080
+==================
+WARNING: DATA RACE
+Read at 0x00c0000c0048 by goroutine 11:
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:158 +0x6d
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).XXX_Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:58 +0x38
+  github.com/gogo/protobuf/proto.Marshal()
+      /Users/yinhang.sun/Documents/workspace/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/table_marshal.go:2938 +0x3ca
+  main.Read()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:49 +0x119
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Previous write at 0x00c0000c0048 by goroutine 55:
+  main.Write()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:37 +0x1d6
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Goroutine 11 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+
+Goroutine 55 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+==================
+==================
+WARNING: DATA RACE
+Read at 0x00c0000c0058 by goroutine 10:
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:165 +0xc5
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).XXX_Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:58 +0x38
+  github.com/gogo/protobuf/proto.Marshal()
+      /Users/yinhang.sun/Documents/workspace/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/table_marshal.go:2938 +0x3ca
+  main.Read()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:49 +0x119
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Previous write at 0x00c0000c0058 by goroutine 55:
+  main.Write()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:39 +0x2a8
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Goroutine 10 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+
+Goroutine 55 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+==================
+==================
+WARNING: DATA RACE
+Read at 0x00c0001aa0d0 by goroutine 11:
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:159 +0x219
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).XXX_Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:58 +0x38
+  github.com/gogo/protobuf/proto.Marshal()
+      /Users/yinhang.sun/Documents/workspace/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/table_marshal.go:2938 +0x3ca
+  main.Read()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:49 +0x119
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Previous write at 0x00c0001aa0d0 by goroutine 55:
+  main.Write()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:37 +0x199
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Goroutine 11 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+
+Goroutine 55 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+==================
+==================
+WARNING: DATA RACE
+Read at 0x00c000188140 by goroutine 10:
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:166 +0x164
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).XXX_Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:58 +0x38
+  github.com/gogo/protobuf/proto.Marshal()
+      /Users/yinhang.sun/Documents/workspace/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/table_marshal.go:2938 +0x3ca
+  main.Read()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:49 +0x119
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Previous write at 0x00c000188140 by goroutine 55:
+  main.Write()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:39 +0x271
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Goroutine 10 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+
+Goroutine 55 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+==================
+==================
+WARNING: DATA RACE
+Read at 0x00c000188140 by goroutine 11:
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:166 +0x164
+  github.com/cyningsun/go-test/20200508-go-race/pb.(*Person).XXX_Size()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/pb/person.pb.go:58 +0x38
+  github.com/gogo/protobuf/proto.Marshal()
+      /Users/yinhang.sun/Documents/workspace/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/table_marshal.go:2938 +0x3ca
+  main.Read()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:49 +0x119
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Previous write at 0x00c000188140 by goroutine 55:
+  main.Write()
+      /Users/yinhang.sun/Documents/workspace/src/github.com/cyningsun/go-test/20200508-go-race/main.go:39 +0x271
+  net/http.HandlerFunc.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1995 +0x51
+  net/http.(*ServeMux).ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2375 +0x28a
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2774 +0xce
+  net/http.(*conn).serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:1878 +0x811
+
+Goroutine 11 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+
+Goroutine 55 (running) created at:
+  net/http.(*Server).Serve()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2884 +0x4c4
+  net/http.(*Server).ListenAndServe()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:2797 +0x15e
+  main.main()
+      /usr/local/Cellar/go@1.12/1.12.13/libexec/src/net/http/server.go:3037 +0x1f2
+==================
+
+...
+
+signal: interrupt
