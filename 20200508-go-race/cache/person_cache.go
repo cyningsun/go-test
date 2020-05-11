@@ -25,8 +25,9 @@ func (p *PersonCache) load() {
 	key := strconv.FormatUint(r,10)
 	newOne := &pb.Person{
 		Id:                   proto.Uint64(10),
-		Name:                 proto.String("init"),
+		Name:                 proto.String("init Name"),
 		Age:                  proto.Uint32(rand.Uint32()),
+		Address:   proto.String("init address"),
 	}
 	p.c.Set(key, newOne, time.Minute)
 }
