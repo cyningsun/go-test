@@ -13,3 +13,4 @@ golang test
 | 20200102-inside-the-go-object-model  | Go Object Model      | [Inside The Go Object Model](https://blog.golang.org/share-memory-by-communicating)   |
 | 20200405-trace_annotation  | log interesting events during execution     | [Package trace](https://golang.org/pkg/runtime/trace/#hdr-User_annotation)   |
 | 20200508-go-race  | 在测试环境使用`go race`发现低概率crash问题     |   |
+| 20201120-go-zookeeper  | 验证 ZK 的工作原理 |   |
