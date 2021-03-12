@@ -1,15 +1,15 @@
-package id
+package encapsulation
 
 import (
 	"testing"
 )
 
 const (
-	id = "412717199109031697"
+	fakeid = "412717199109031697"
 )
 
 func Test_Birthday(t *testing.T) {
-	found := Birthday(id)
+	found := Birthday(fakeid)
 	wanted := "19910903"
 	if found != wanted {
 		t.Errorf("unexpected birthday, wanted:%v, found:%v", wanted, found)
@@ -17,7 +17,7 @@ func Test_Birthday(t *testing.T) {
 }
 
 func TestID_Birthday(t *testing.T) {
-	found := ID(id).Birthday()
+	found := ID(fakeid).Birthday()
 	wanted := "19910903"
 	if found != wanted {
 		t.Errorf("unexpected birthday, wanted:%v, found:%v", wanted, found)
