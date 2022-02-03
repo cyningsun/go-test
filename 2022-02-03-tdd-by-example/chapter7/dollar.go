@@ -1,13 +1,13 @@
 package chapter7
 
 type Dollar struct {
-	Money
+	*money
 }
 
 func NewDollar(a int) *Dollar {
-	return &Dollar{
-		NewMoney(a),
-	}
+	d := &Dollar{}
+	d.money = NewMoney(d, a)
+	return d
 }
 
 func (d *Dollar) Times(multiplier int) *Dollar {

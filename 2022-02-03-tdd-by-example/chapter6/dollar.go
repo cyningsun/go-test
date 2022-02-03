@@ -1,7 +1,7 @@
 package chapter6
 
 type Dollar struct {
-	Money
+	*money
 }
 
 func NewDollar(a int) *Dollar {

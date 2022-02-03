@@ -1,15 +1,15 @@
 package chapter7
 
 type Franc struct {
-	Money
+	*money
 }
 
 func NewFranc(a int) *Franc {
-	return &Franc{
-		NewMoney(a),
-	}
+	f := &Franc{}
+	f.money = NewMoney(f, a)
+	return f
 }
 
-func (d *Franc) Times(multiplier int) *Franc {
-	return NewFranc(d.Amount() * multiplier)
+func (f *Franc) Times(multiplier int) *Franc {
+	return NewFranc(f.Amount() * multiplier)
 }

@@ -10,11 +10,11 @@ func NewFranc(a int) *Franc {
 	}
 }
 
-func (d *Franc) Times(multiplier int) *Franc {
-	return NewFranc(d.amount * multiplier)
+func (f *Franc) Times(multiplier int) *Franc {
+	return NewFranc(f.amount * multiplier)
 }
 
-func (d *Franc) Equals(obj interface{}) bool {
+func (f *Franc) Equals(obj interface{}) bool {
 	franc := obj.(*Franc)
-	return d.amount == franc.amount
+	return f.amount == franc.amount
 }

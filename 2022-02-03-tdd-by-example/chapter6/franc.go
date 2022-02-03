@@ -1,7 +1,7 @@
 package chapter6
 
 type Franc struct {
-	Money
+	*money
 }
 
 func NewFranc(a int) *Franc {
@@ -10,6 +10,6 @@ func NewFranc(a int) *Franc {
 	}
 }
 
-func (d *Franc) Times(multiplier int) *Franc {
-	return NewFranc(d.Amount() * multiplier)
+func (f *Franc) Times(multiplier int) *Franc {
+	return NewFranc(f.Amount() * multiplier)
 }
