@@ -8,6 +8,6 @@ import (
 
 func TestFrancMultiplication(t *testing.T) {
 	five := franc(5)
-	assert.Equal(t, franc(10), five.Times(2))
-	assert.Equal(t, franc(15), five.Times(3))
+	assert.True(t, franc(10).Equals(five.Times(2)))
+	assert.True(t, franc(15).Equals(five.Times(3)))
 }

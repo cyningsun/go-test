@@ -1,4 +1,4 @@
-package chapter10
+package chapter12
 
 import (
 	"testing"
@@ -15,9 +15,14 @@ func TestMultiplication(t *testing.T) {
 func TestEquality(t *testing.T) {
 	assert.True(t, dollar(5).Equals(dollar(5)))
 	assert.False(t, dollar(5).Equals(dollar(6)))
-
-	assert.True(t, franc(5).Equals(franc(5)))
-	assert.False(t, franc(5).Equals(franc(6)))
-
 	assert.False(t, franc(5).Equals(dollar(5)))
+}
+
+func TestSimpleAddition(t *testing.T) {
+	sum := dollar(5).Plus(dollar(5))
+	assert.Equal(t, dollar(10), sum)
+
+	bank := NewBank()
+	reduced := bank.reduce(sum, "USD")
+	assert.Equal(t, dollar(10), reduced)
 }

@@ -9,7 +9,3 @@ func NewDollar(a int, c string) *Dollar {
 		NewMoney(a, c),
 	}
 }
-
-func (d *Dollar) Times(multiplier int) Money {
-	return NewDollar(d.Amount()*multiplier, d.currency)
-}
