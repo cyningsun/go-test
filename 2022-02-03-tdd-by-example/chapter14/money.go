@@ -42,7 +42,7 @@ func (m *money) Plus(added Money) Expression {
 	return NewSum(m, added)
 }
 
-func (m *money) reduce(bank *Bank, to string) Money {
-	rate := bank.rate(m.currency, to)
+func (m *money) Reduce(bank *Bank, to string) Money {
+	rate := bank.Rate(m.currency, to)
 	return NewMoney(m.Amount()/rate, to)
 }

@@ -12,7 +12,7 @@ type Money interface {
 
 type money struct {
 	amount int
-	parent Money // TODO any way get parent type ?
+	parent Money // TODO any other way get parent type ?
 }
 
 func NewMoney(m Money, a int) *money {

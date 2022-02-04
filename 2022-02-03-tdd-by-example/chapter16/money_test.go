@@ -1,4 +1,4 @@
-package chapter14
+package chapter16
 
 import (
 	"testing"
@@ -20,6 +20,8 @@ func TestEquality(t *testing.T) {
 
 func TestSimpleAddition(t *testing.T) {
 	sum := dollar(5).Plus(dollar(5))
+	assert.Equal(t, dollar(10), sum)
+
 	bank := NewBank()
 	reduced := bank.Reduce(sum, "USD")
 	assert.Equal(t, dollar(10), reduced)
@@ -69,3 +71,29 @@ func TestMixedAddition(t *testing.T) {
 	result := bank.Reduce(fiveBucks.Plus(tenFrancs), "USD")
 	assert.Equal(t, dollar(10), result)
 }
+
+func TestSumPlusMoney(t *testing.T) {
+	var fiveBucks Expression = dollar(5)
+	var tenFrancs Expression = franc(10)
+	var bank *Bank = NewBank()
+	bank.AddRate("CHF", "USD", 2)
+	var sum Expression = NewSum(fiveBucks, tenFrancs).Plus(fiveBucks)
+	var result Money = bank.Reduce(sum, "USD")
+	assert.Equal(t, dollar(15), result)
+}
+
+func TestSumTimes(t *testing.T) {
+	var fiveBucks Expression = dollar(5)
+	var tenFrancs Expression = franc(10)
+	var bank *Bank = NewBank()
+	bank.AddRate("CHF", "USD", 2)
+	var sum Expression = NewSum(fiveBucks, tenFrancs).Times(2)
+	var result Money = bank.Reduce(sum, "USD")
+	assert.Equal(t, dollar(20), result)
+}
+
+// func TestPlusSameCurrencyReturnsMoney(t *testing.T) {
+// 	var sum Expression = dollar(1).Plus(dollar(1))
+// 	_, ok := sum.(*money)
+// 	assert.True(t, ok)
+// }

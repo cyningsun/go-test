@@ -10,11 +10,11 @@ func NewBank() *Bank {
 	}
 }
 
-func (b *Bank) reduce(source Expression, to string) Money {
-	return source.reduce(b, to)
+func (b *Bank) Reduce(source Expression, to string) Money {
+	return source.Reduce(b, to)
 }
 
-func (b *Bank) rate(from, to string) int {
+func (b *Bank) Rate(from, to string) int {
 	if from == to {
 		return 1
 	}
@@ -23,7 +23,7 @@ func (b *Bank) rate(from, to string) int {
 	return rate
 }
 
-func (b *Bank) addRate(from, to string, rate int) {
+func (b *Bank) AddRate(from, to string, rate int) {
 	p := NewPair(from, to)
 	b.rates[*p] = rate
 }

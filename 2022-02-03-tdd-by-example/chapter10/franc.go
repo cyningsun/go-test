@@ -9,7 +9,3 @@ func NewFranc(a int, c string) *Franc {
 		NewMoney(a, c),
 	}
 }
-
-// func (f *Franc) Times(multiplier int) Money {
-// 	return NewFranc(f.Amount()*multiplier, f.currency)
-// }

@@ -1,4 +1,4 @@
-package chapter14
+package chapter16
 
 type Sum struct {
 	Expression
@@ -19,5 +19,9 @@ func (s *Sum) Reduce(bank *Bank, to string) Money {
 }
 
 func (s *Sum) Plus(added Expression) Expression {
-	return nil
+	return NewSum(s, added)
+}
+
+func (s *Sum) Times(multiplier int) Expression {
+	return NewSum(s.augend.Times(multiplier), s.added.Times(multiplier))
 }

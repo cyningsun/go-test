@@ -1,11 +1,9 @@
-package chapter13
+package chapter16
 
 type Money interface {
 	Amount() int
 	Equals(interface{}) bool
-	Times(multiplier int) Money
 	Currency() string
-	Plus(Money) Expression
 	Expression
 }
 
@@ -34,14 +32,15 @@ func (m *money) Currency() string {
 	return m.currency
 }
 
-func (m *money) Times(multiplier int) Money {
+func (m *money) Times(multiplier int) Expression {
 	return NewMoney(m.Amount()*multiplier, m.currency)
 }
 
-func (m *money) Plus(added Money) Expression {
+func (m *money) Plus(added Expression) Expression {
 	return NewSum(m, added)
 }
 
-func (m *money) Reduce(to string) Money {
-	return m
+func (m *money) Reduce(bank *Bank, to string) Money {
+	rate := bank.Rate(m.currency, to)
+	return NewMoney(m.Amount()/rate, to)
 }

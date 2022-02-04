@@ -13,7 +13,7 @@ func NewSum(augend, added Money) *Sum {
 	}
 }
 
-func (s *Sum) reduce(bank *Bank, to string) Money {
+func (s *Sum) Reduce(bank *Bank, to string) Money {
 	amount := s.augend.Amount() + s.added.Amount()
 	return NewMoney(amount, to)
 }

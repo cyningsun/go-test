@@ -7,6 +7,6 @@ func NewBank() *Bank {
 	return &Bank{}
 }
 
-func (b *Bank) reduce(source Expression, to string) Money {
+func (b *Bank) Reduce(source Expression, to string) Money {
 	return dollar(10)
 }

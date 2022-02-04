@@ -1,4 +1,4 @@
-package chapter14
+package chapter16
 
 type Bank struct {
 	rates map[pair]int
