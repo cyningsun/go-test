@@ -14,3 +14,6 @@ golang test
 | 20200405-trace_annotation  | log interesting events during execution     | [Package trace](https://golang.org/pkg/runtime/trace/#hdr-User_annotation)   |
 | 20200508-go-race  | 在测试环境使用`go race`发现低概率crash问题     |   |
 | 20201120-go-zookeeper  | 验证 ZK 的工作原理 |   |
+| 20210311-oop-in-go  | Golang 面向对象编程 |  [Golang 面向对象编程](https://www.cyningsun.com/03-12-2021/oop-in-go.html) |
+| 20210509-go-channel-vs-mutex  | Channel vs mutex |  |
+| 2022-02-03-tdd-by-example  | Test Driven Development: By Example(Golang) |  [Test Driven Development: By Example](https://www.oreilly.com/library/view/test-driven-development/0321146530/) |
