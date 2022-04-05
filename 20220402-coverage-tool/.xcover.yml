@@ -1,5 +1,5 @@
 
 
 ignore:
-  - "*/examples/*"
-  - "mock_*.go"
+  - "**/examples/**"
+  - "**/mock_*.go"

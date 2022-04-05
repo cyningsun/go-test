@@ -4,11 +4,12 @@ import (
 	"regexp"
 
 	"github.com/cyningsun/go-test/20220402-coverage-tool/config"
+	"github.com/cyningsun/go-test/20220402-coverage-tool/wildmatch"
 )
 
 func Ignore(file string) bool {
 	for _, r := range config.IgnorePattern() {
-		if r.MatchString(file) {
+		if wildmatch.WildMatch(r, file, wildmatch.WM_PATHNAME) == 0 {
 			return true
 		}
 	}
