@@ -17,8 +17,21 @@ const (
 	WM_ABORT_TO_STARSTAR = -2
 )
 
-func CC_EQ(class, litmatch []rune, len int) bool {
-	for i := 0; i < len; i++ {
+/* *, ?, [, \\ */
+func isGlobSpecial(x rune) bool {
+	switch x {
+	case '*', '?', '[', '\\':
+		return true
+	default:
+		return false
+	}
+}
+
+func equals(class, litmatch []rune) bool {
+	if len(class) != len(litmatch) {
+		return false
+	}
+	for i := 0; i < len(class); i++ {
 		if class[i] != litmatch[i] {
 			return false
 		}
@@ -26,46 +39,22 @@ func CC_EQ(class, litmatch []rune, len int) bool {
 	return true
 }
 
-func ISASCII(c rune) bool {
-	return isascii(c)
-}
-func ISBLANK(c rune) bool {
+// https://stackoverflow.com/questions/15767863/whats-the-difference-between-space-and-blank
+// [:blank:]
+//
+//   Blank characters: space and tab.
+//
+// [:space:]
+//
+//     Space characters: in the 'C' locale, this is tab, newline,
+//     vertical tab, form feed, carriage return, and space.
+//
+func IsBlank(c rune) bool {
 	return c == ' ' || (c) == '\t'
 }
 
-func ISGRAPH(c rune) bool {
-	return isascii(c) && isprint(c) && !isspace(c)
-}
-
-func ISPRINT(c rune) bool {
-	return unicode.IsPrint(c)
-}
-func ISDIGIT(c rune) bool {
-	return unicode.IsDigit(c)
-}
-func ISALNUM(c rune) bool {
-	return ISASCII(c) && isalnum(c)
-}
-func ISALPHA(c rune) bool {
-	return ISASCII(c) && isalpha(c)
-}
-func ISCNTRL(c rune) bool {
-	return unicode.IsControl(c)
-}
-func ISLOWER(c rune) bool {
-	return unicode.IsLower(c)
-}
-func ISPUNCT(c rune) bool {
-	return unicode.IsPunct(c)
-}
-func ISSPACE(c rune) bool {
-	return unicode.IsSpace(c)
-}
-func ISUPPER(c rune) bool {
-	return unicode.IsUpper(c)
-}
-func ISXDIGIT(c rune) bool {
-	return ISASCII(c) && isxdigit(c)
+func IsAlphaNum(c rune) bool {
+	return unicode.IsLetter(c) || unicode.IsNumber(c)
 }
 
 func strchr(text []rune, c rune) int {
@@ -77,7 +66,7 @@ func strchr(text []rune, c rune) int {
 	return len(text)
 }
 
-func dowild(pattern, text []rune, flags int) int {
+func doWild(pattern, text []rune, flags int) int {
 	iText, iPattern := 0, 0
 	for ; iPattern < len(pattern); iPattern, iText = iPattern+1, iText+1 {
 		var (
@@ -123,7 +112,6 @@ func dowild(pattern, text []rune, flags int) int {
 			}
 
 			continue
-
 		case '*':
 			iPattern++
 			if iPattern < len(pattern) && pattern[iPattern] == '*' {
@@ -150,7 +138,7 @@ func dowild(pattern, text []rune, flags int) int {
 					 * otherwise it breaks C comment syntax) match
 					 * both foo/bar and foo/a/bar.
 					 */
-					if iPattern < len(pattern) && pattern[iPattern] == '/' && dowild(pattern[iPattern+1:], text[iText:], flags) == WM_MATCH {
+					if iPattern < len(pattern) && pattern[iPattern] == '/' && doWild(pattern[iPattern+1:], text[iText:], flags) == WM_MATCH {
 						return WM_MATCH
 					}
 
@@ -228,7 +216,7 @@ func dowild(pattern, text []rune, flags int) int {
 						return WM_NOMATCH
 					}
 				}
-				if matched = dowild(pattern[iPattern:], text[iText:], flags); matched != WM_NOMATCH {
+				if matched = doWild(pattern[iPattern:], text[iText:], flags); matched != WM_NOMATCH {
 					if matchSlash != 0 || matched != WM_ABORT_TO_STARSTAR {
 						return matched
 					}
@@ -333,54 +321,54 @@ func dowild(pattern, text []rune, flags int) int {
 						}
 						continue
 					}
-					if CC_EQ(s, []rune("alnum"), i) {
-						if ISALNUM(tCh) {
+					if equals(s[:i], []rune("alnum")) {
+						if IsAlphaNum(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("alpha"), i) {
-						if ISALPHA(tCh) {
+					} else if equals(s[:i], []rune("alpha")) {
+						if unicode.IsLetter(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("blank"), i) {
-						if ISBLANK(tCh) {
+					} else if equals(s[:i], []rune("blank")) {
+						if IsBlank(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("cntrl"), i) {
-						if ISCNTRL(tCh) {
+					} else if equals(s[:i], []rune("cntrl")) {
+						if unicode.IsControl(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("digit"), i) {
-						if ISDIGIT(tCh) {
+					} else if equals(s[:i], []rune("digit")) {
+						if unicode.IsDigit(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("graph"), i) {
-						if ISGRAPH(tCh) {
+					} else if equals(s[:i], []rune("graph")) {
+						if unicode.IsGraphic(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("lower"), i) {
-						if ISLOWER(tCh) {
+					} else if equals(s[:i], []rune("lower")) {
+						if unicode.IsLower(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("print"), i) {
-						if ISPRINT(tCh) {
+					} else if equals(s[:i], []rune("print")) {
+						if unicode.IsPrint(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("punct"), i) {
-						if ISPUNCT(tCh) {
+					} else if equals(s[:i], []rune("punct")) {
+						if unicode.IsPunct(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("space"), i) {
-						if ISSPACE(tCh) {
+					} else if equals(s[:i], []rune("space")) {
+						if unicode.IsSpace(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("upper"), i) {
-						if ISUPPER(tCh) {
+					} else if equals(s[:i], []rune("upper")) {
+						if unicode.IsUpper(tCh) {
 							matched = 1
-						} else if (flags&WM_CASEFOLD) != 0 && ISLOWER(tCh) {
+						} else if (flags&WM_CASEFOLD) != 0 && unicode.IsLower(tCh) {
 							matched = 1
 						}
-					} else if CC_EQ(s, []rune("xdigit"), i) {
-						if ISXDIGIT(tCh) {
+					} else if equals(s[:i], []rune("xdigit")) {
+						if unicode.Is(unicode.Hex_Digit, tCh) {
 							matched = 1
 						}
 					} else { /* malformed [:class:] string */
@@ -416,5 +404,5 @@ func dowild(pattern, text []rune, flags int) int {
 }
 
 func WildMatch(pattern, text string, flags int) int {
-	return dowild([]rune(pattern), []rune(text), flags)
+	return doWild([]rune(pattern), []rune(text), flags)
 }

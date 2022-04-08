@@ -1553,7 +1553,7 @@ func Test_WildMatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := WildMatch(tt.args.pattern, tt.args.text, tt.args.flags); got != tt.want {
-				t.Errorf("dowild() = %v, want %v", got, tt.want)
+				t.Errorf("doWild() = %v, want %v", got, tt.want)
 			}
 		})
 	}
