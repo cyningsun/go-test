@@ -49,11 +49,11 @@ func equals(class, litmatch []rune) bool {
 //     Space characters: in the 'C' locale, this is tab, newline,
 //     vertical tab, form feed, carriage return, and space.
 //
-func IsBlank(c rune) bool {
+func isBlank(c rune) bool {
 	return c == ' ' || (c) == '\t'
 }
 
-func IsAlphaNum(c rune) bool {
+func isAlphaNum(c rune) bool {
 	return unicode.IsLetter(c) || unicode.IsNumber(c)
 }
 
@@ -70,8 +70,7 @@ func doWild(pattern, text []rune, flags int) int {
 	iText, iPattern := 0, 0
 	for ; iPattern < len(pattern); iPattern, iText = iPattern+1, iText+1 {
 		var (
-			matched, matchSlash, negated int
-			tCh, pCh, prevCh             rune
+			tCh, pCh, prevCh rune
 		)
 
 		if iPattern < len(pattern) {
@@ -98,22 +97,20 @@ func doWild(pattern, text []rune, flags int) int {
 			 * in "default" handles the p[1] == '\0' failure case. */
 			iPattern++
 			pCh = pattern[iPattern]
-			/* FALLTHROUGH */
-		default:
 			if tCh != pCh {
 				return WM_NOMATCH
 			}
-
-			continue
 		case '?':
 			/* Match anything but '/'. */
 			if (flags&WM_PATHNAME) != 0 && tCh == '/' {
 				return WM_NOMATCH
 			}
-
-			continue
 		case '*':
 			iPattern++
+
+			matched := 0
+			matchSlash := false
+
 			if iPattern < len(pattern) && pattern[iPattern] == '*' {
 				prevP := rune(0)
 				if iPattern-2 > 0 {
@@ -125,7 +122,7 @@ func doWild(pattern, text []rune, flags int) int {
 				}
 				if (flags & WM_PATHNAME) == 0 {
 					/* without WM_PATHNAME, '*' == '**' */
-					matchSlash = 1
+					matchSlash = true
 				} else if ((iPattern < len(pattern) && prevP < pattern[iPattern]) || prevP == '/') &&
 					(iPattern == len(pattern) || pattern[iPattern] == '/' ||
 						(pattern[iPattern] == '\\' && pattern[iPattern+1] == '/')) {
@@ -142,29 +139,29 @@ func doWild(pattern, text []rune, flags int) int {
 						return WM_MATCH
 					}
 
-					matchSlash = 1
+					matchSlash = true
 				} else { /* WM_PATHNAME is set */
-					matchSlash = 0
+					matchSlash = false
 				}
 			} else {
 				/* without WM_PATHNAME, '*' == '**' */
 				if (flags & WM_PATHNAME) != 0 {
-					matchSlash = 0
+					matchSlash = false
 				} else {
-					matchSlash = 1
+					matchSlash = true
 				}
 			}
 
 			if iPattern == len(pattern) {
 				/* Trailing "**" matches everything.  Trailing "*" matches
 				 * only if there are no more slash characters. */
-				if matchSlash == 0 {
+				if !matchSlash {
 					if strchr(text[iText:], '/') != len(text[iText:]) {
 						return WM_NOMATCH
 					}
 				}
 				return WM_MATCH
-			} else if matchSlash == 0 && pattern[iPattern] == '/' {
+			} else if !matchSlash && pattern[iPattern] == '/' {
 				/*
 				 * _one_ asterisk followed by a slash
 				 * with WM_PATHNAME matches the next
@@ -201,7 +198,7 @@ func doWild(pattern, text []rune, flags int) int {
 
 					for iText < len(text) {
 						tCh = text[iText]
-						if matchSlash == 0 && tCh == '/' {
+						if !matchSlash && tCh == '/' {
 							break
 						}
 						if (flags&WM_CASEFOLD) != 0 && unicode.IsUpper(tCh) {
@@ -217,10 +214,10 @@ func doWild(pattern, text []rune, flags int) int {
 					}
 				}
 				if matched = doWild(pattern[iPattern:], text[iText:], flags); matched != WM_NOMATCH {
-					if matchSlash != 0 || matched != WM_ABORT_TO_STARSTAR {
+					if matchSlash || matched != WM_ABORT_TO_STARSTAR {
 						return matched
 					}
-				} else if matchSlash == 0 && tCh == '/' {
+				} else if !matchSlash && tCh == '/' {
 					return WM_ABORT_TO_STARSTAR
 				}
 				iText++
@@ -232,6 +229,9 @@ func doWild(pattern, text []rune, flags int) int {
 			return WM_ABORT_ALL
 		case '[':
 			iPattern++
+
+			matched, negated := false, false
+
 			if iPattern < len(pattern) {
 				pCh = pattern[iPattern]
 			}
@@ -241,12 +241,10 @@ func doWild(pattern, text []rune, flags int) int {
 
 			/* Assign literal 1/0 because of "matched" comparison. */
 			if pCh == NEGATE_CLASS {
-				negated = 1
-			} else {
-				negated = 0
+				negated = true
 			}
 
-			if negated != 0 { /* Inverted character class. */
+			if negated { /* Inverted character class. */
 				iPattern++
 				if iPattern < len(pattern) {
 					pCh = pattern[iPattern]
@@ -254,7 +252,6 @@ func doWild(pattern, text []rune, flags int) int {
 			}
 
 			prevCh = 0
-			matched = 0
 			for {
 				if iPattern == len(pattern) {
 					return WM_ABORT_ALL
@@ -265,9 +262,8 @@ func doWild(pattern, text []rune, flags int) int {
 					if iPattern == len(pattern) {
 						return WM_ABORT_ALL
 					}
-					if tCh == pCh {
-						matched = 1
-					}
+
+					matched = (tCh == pCh)
 				} else if pCh == '-' && prevCh != 0 && (iPattern+1) < len(pattern) && pattern[iPattern+1] != ']' {
 					iPattern++
 					pCh = pattern[iPattern]
@@ -281,11 +277,11 @@ func doWild(pattern, text []rune, flags int) int {
 						}
 					}
 					if tCh <= pCh && tCh >= prevCh {
-						matched = 1
+						matched = true
 					} else if (flags&WM_CASEFOLD) != 0 && unicode.IsLower(tCh) {
 						tChUpper := unicode.ToUpper(tCh)
 						if tChUpper <= pCh && tChUpper >= prevCh {
-							matched = 1
+							matched = true
 						}
 					}
 					pCh = 0 /* This makes "prev_ch" get set to 0. */
@@ -316,67 +312,66 @@ func doWild(pattern, text []rune, flags int) int {
 					if i < 0 || pattern[iPattern-1] != ':' {
 						pattern = pattern[is-2:]
 						pCh = '['
-						if tCh == pCh {
-							matched = 1
-						}
+						matched = (tCh == pCh)
+
 						continue
 					}
 					if equals(s[:i], []rune("alnum")) {
-						if IsAlphaNum(tCh) {
-							matched = 1
+						if isAlphaNum(tCh) {
+							matched = true
 						}
 					} else if equals(s[:i], []rune("alpha")) {
 						if unicode.IsLetter(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("blank")) {
-						if IsBlank(tCh) {
-							matched = 1
+						if isBlank(tCh) {
+							matched = true
 						}
 					} else if equals(s[:i], []rune("cntrl")) {
 						if unicode.IsControl(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("digit")) {
 						if unicode.IsDigit(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("graph")) {
 						if unicode.IsGraphic(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("lower")) {
 						if unicode.IsLower(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("print")) {
 						if unicode.IsPrint(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("punct")) {
 						if unicode.IsPunct(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("space")) {
 						if unicode.IsSpace(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("upper")) {
 						if unicode.IsUpper(tCh) {
-							matched = 1
+							matched = true
 						} else if (flags&WM_CASEFOLD) != 0 && unicode.IsLower(tCh) {
-							matched = 1
+							matched = true
 						}
 					} else if equals(s[:i], []rune("xdigit")) {
 						if unicode.Is(unicode.Hex_Digit, tCh) {
-							matched = 1
+							matched = true
 						}
 					} else { /* malformed [:class:] string */
 						return WM_ABORT_ALL
 					}
 					pCh = 0 /* This makes "prev_ch" get set to 0. */
 				} else if tCh == pCh {
-					matched = 1
+					matched = true
 				}
 
 				prevCh = pCh
@@ -392,8 +387,10 @@ func doWild(pattern, text []rune, flags int) int {
 			if matched == negated || (flags&WM_PATHNAME) != 0 && tCh == '/' {
 				return WM_NOMATCH
 			}
-
-			continue
+		default:
+			if tCh != pCh {
+				return WM_NOMATCH
+			}
 		}
 	}
 
