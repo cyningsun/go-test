@@ -16,7 +16,7 @@ func init() {
 	v.AddConfigPath("$HOME/")  // call multiple times to add many search paths
 	v.AddConfigPath(".")       // optionally look for config in the working directory
 
-	ancestor, _ := walk.AncestorDir(".")
+	ancestor, _ := walk.Ancestor(".")
 	for _, each := range ancestor {
 		viper.AddConfigPath(each)
 	}

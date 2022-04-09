@@ -6,13 +6,15 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
+	"github.com/cyningsun/go-test/20220402-coverage-tool/coverage"
 	"github.com/spf13/cobra"
 )
 
 // checkIgnoreCmd represents the checkIgnore command
 var checkIgnoreCmd = &cobra.Command{
-	Use:   "check-ignore",
+	Use:   "check-ignore <pathname>",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -20,8 +22,16 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	Args:               cobra.MinimumNArgs(1),
+	DisableFlagParsing: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("checkIgnore called")
+		files, err := coverage.IgnoreFiles(args)
+		if err != nil {
+			log.Fatalf("read path failed, err:%v", err)
+		}
+		for _, each := range files {
+			fmt.Println(each)
+		}
 	},
 }
 

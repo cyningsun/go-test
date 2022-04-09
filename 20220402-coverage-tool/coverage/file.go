@@ -95,7 +95,7 @@ func match(input []string) []Line {
 		count, _ := strconv.Atoi(match[4])
 		covered, _ := strconv.ParseBool(match[5])
 
-		if Ignore(filepath) {
+		if isIgnore(filepath) {
 			continue
 		}
 
