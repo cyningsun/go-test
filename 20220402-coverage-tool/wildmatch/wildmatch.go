@@ -256,6 +256,7 @@ func doWild(pattern, text []rune, flags int) int {
 				if iPattern == len(pattern) {
 					return WM_ABORT_ALL
 				}
+
 				if pCh == '\\' {
 					iPattern++
 					pCh = pattern[iPattern]
@@ -286,20 +287,10 @@ func doWild(pattern, text []rune, flags int) int {
 					}
 					pCh = 0 /* This makes "prev_ch" get set to 0. */
 				} else if pCh == '[' && pattern[iPattern+1] == ':' {
-					var (
-						s  []rune
-						is int
-						i  int
-					)
-					is = iPattern + 2
-					s = pattern[is:]
+					chBeg := iPattern + 2
 					for {
-						if iPattern == len(pattern) {
-							break
-						}
-
 						pCh = pattern[iPattern]
-						if pCh == ']' {
+						if pCh == ']' || iPattern == len(pattern) {
 							break
 						}
 						iPattern++
@@ -308,61 +299,63 @@ func doWild(pattern, text []rune, flags int) int {
 						return WM_ABORT_ALL
 					}
 
-					i = iPattern - is - 1
-					if i < 0 || pattern[iPattern-1] != ':' {
-						pattern = pattern[is-2:]
+					chLen := iPattern - chBeg - 1
+					if chLen < 0 || pattern[iPattern-1] != ':' {
+						pattern = pattern[chBeg-2:]
 						pCh = '['
 						matched = (tCh == pCh)
 
 						continue
 					}
-					if equals(s[:i], []rune("alnum")) {
+
+					ch := pattern[chBeg : chBeg+chLen]
+					if equals(ch, []rune("alnum")) {
 						if isAlphaNum(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("alpha")) {
+					} else if equals(ch, []rune("alpha")) {
 						if unicode.IsLetter(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("blank")) {
+					} else if equals(ch, []rune("blank")) {
 						if isBlank(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("cntrl")) {
+					} else if equals(ch, []rune("cntrl")) {
 						if unicode.IsControl(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("digit")) {
+					} else if equals(ch, []rune("digit")) {
 						if unicode.IsDigit(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("graph")) {
+					} else if equals(ch, []rune("graph")) {
 						if unicode.IsGraphic(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("lower")) {
+					} else if equals(ch, []rune("lower")) {
 						if unicode.IsLower(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("print")) {
+					} else if equals(ch, []rune("print")) {
 						if unicode.IsPrint(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("punct")) {
+					} else if equals(ch, []rune("punct")) {
 						if unicode.IsPunct(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("space")) {
+					} else if equals(ch, []rune("space")) {
 						if unicode.IsSpace(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("upper")) {
+					} else if equals(ch, []rune("upper")) {
 						if unicode.IsUpper(tCh) {
 							matched = true
 						} else if (flags&WM_CASEFOLD) != 0 && unicode.IsLower(tCh) {
 							matched = true
 						}
-					} else if equals(s[:i], []rune("xdigit")) {
+					} else if equals(ch, []rune("xdigit")) {
 						if unicode.Is(unicode.Hex_Digit, tCh) {
 							matched = true
 						}
