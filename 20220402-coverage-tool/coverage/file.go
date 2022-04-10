@@ -2,8 +2,8 @@ package coverage
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"sort"
@@ -37,10 +37,14 @@ type Parser struct {
 	Lines    []Line
 	Files    []File
 	TotalCov float32
+
+	verbose bool
 }
 
-func NewParser() *Parser {
-	return &Parser{}
+func NewParser(v bool) *Parser {
+	return &Parser{
+		verbose: v,
+	}
 }
 
 func (p *Parser) Parse(cover string) error {
@@ -50,7 +54,7 @@ func (p *Parser) Parse(cover string) error {
 	}
 
 	p.Lines = match(raw)
-	p.Files = calFileCov(p.Lines)
+	p.Files = p.calFileCov(p.Lines)
 	p.TotalCov = calTotalCov(p.Files)
 
 	return nil
@@ -95,10 +99,6 @@ func match(input []string) []Line {
 		count, _ := strconv.Atoi(match[4])
 		covered, _ := strconv.ParseBool(match[5])
 
-		if isIgnore(filepath) {
-			continue
-		}
-
 		output = append(output, Line{
 			FilePath: filepath,
 			LineFrom: from,
@@ -111,7 +111,7 @@ func match(input []string) []Line {
 	return output
 }
 
-func calFileCov(lines []Line) []File {
+func (p *Parser) calFileCov(lines []Line) []File {
 	dict := make(map[string][]Line)
 	for _, each := range lines {
 		key := each.FilePath
@@ -141,12 +141,23 @@ func calFileCov(lines []Line) []File {
 			}
 		}
 
+		if match := isIgnore(filePath); match.OK {
+			if p.verbose {
+				log.Printf("IGNORED | %v:%v", match.Pattern, match.Path)
+			}
+			continue
+		}
+
 		files = append(files, File{
 			FilePath:       filePath,
 			TotalLines:     total,
 			CoveredLines:   covered,
 			UncoveredLines: uncovered,
 		})
+
+		if p.verbose {
+			log.Printf("SUMMARIZE | %v:%.1f%%", filePath, 100*float32(covered)/float32(total))
+		}
 	}
 
 	return files
@@ -159,11 +170,4 @@ func calTotalCov(files []File) float32 {
 		total += f.TotalLines
 	}
 	return 100 * float32(covered) / float32(total)
-}
-
-func (p *Parser) Println() {
-	fmt.Println("totalCov:", p.TotalCov)
-	for _, each := range p.Files {
-		fmt.Println(each.FilePath, each.Coverage())
-	}
 }

@@ -5,7 +5,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,19 +19,15 @@ var (
 		Use:   "xcover",
 		Short: "Xcover is a strengthen coverage profile analysis tool",
 		Run: func(cmd *cobra.Command, args []string) {
-			parser := coverage.NewParser()
+			parser := coverage.NewParser(verbose)
 			if err := parser.Parse(cover); err != nil {
 				log.Fatalf("parse coverage profile failed, err:%v", err)
 			}
-			switch prefix {
-			case "*":
-				fmt.Printf("%v:%v\n", filepath.Dir(cover), parser.TotalCov)
-			}
+			log.Printf("TOTAL SUMMARIZE | %v:%.1f%%\n", filepath.Dir(cover), parser.TotalCov)
 		},
 	}
 
-	cover  string
-	prefix string
+	cover   string
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -55,6 +50,5 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().StringVarP(&cover, "coverprofile", "c", "", "coverage profile path")
 	rootCmd.MarkFlagRequired("coverprofile")
-
-	rootCmd.Flags().StringVarP(&prefix, "group", "g", "*", "group by code path")
+	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, `Instead of printing the paths that are excluded, for each path that matches an exclude pattern, print the exclude pattern together with the path. (Matching an exclude pattern usually means the path is excluded, but if the pattern begins with ! then it is a negated pattern and matching it means the path is NOT excluded.)`)
 }
