@@ -18,7 +18,7 @@ func init() {
 
 	ancestor, _ := walk.Ancestor(".")
 	for _, each := range ancestor {
-		viper.AddConfigPath(each)
+		v.AddConfigPath(each)
 	}
 
 	if err := v.ReadInConfig(); err != nil {
