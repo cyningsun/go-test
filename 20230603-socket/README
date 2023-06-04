@@ -1,0 +1,9 @@
+The Go extension does let you change your env vars though, so you can work around this in VSCode. In your extensions settings, put something like:
+
+```json
+{
+    "go.toolsEnvVars": {"GOOS" : "linux"}
+}
+```
+
+and your project will be built for that OS.
