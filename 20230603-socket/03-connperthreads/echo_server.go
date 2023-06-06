@@ -13,6 +13,7 @@ func main() {
 		log.Printf("create socket failed: %v\n", err)
 		return
 	}
+	defer syscall.Close(listenfd)
 
 	if err := syscall.Bind(listenfd, &syscall.SockaddrInet4{
 		Port: 8080,
@@ -33,19 +34,29 @@ func main() {
 			log.Printf("accept failed: %v\n", err)
 			continue
 		}
+		defer syscall.Close(connfd)
 
 		log.Printf("Accepted a connection")
 
 		go func() {
 			buf := make([]byte, 1024)
+			ok := true
 
-			n, err := syscall.Read(connfd, buf)
-			if err != nil {
-				log.Printf("read failed: %v\n", err)
-				return
+			for ok {
+				n, err := syscall.Read(connfd, buf)
+				if err != nil {
+					log.Printf("read failed: %v\n", err)
+					return
+				}
+
+				if n == 0 {
+					continue
+				}
+
+				log.Printf("read %d bytes:%v\n", n, string(buf[:n]))
+
+				syscall.Write(connfd, buf[:n]) // echo
 			}
-
-			log.Printf("read %d bytes:%v\n", n, string(buf[:n]))
 		}()
 	}
 }
