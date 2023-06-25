@@ -44,7 +44,7 @@ func main() {
 
 	for {
 		args := &shared.Args{}
-		n, err := fmt.Scanf("%d%d", &args.Args1, &args.Args2)
+		n, err := fmt.Scanf("%d %d", &args.Args1, &args.Args2)
 		if err != nil {
 			log.Printf("scanf failed: %v\n", err)
 			return
@@ -67,9 +67,9 @@ func main() {
 		ret := &shared.Result{}
 
 		size := binary.Size(*ret)
-
 		for tn, rn := 0, 0; tn < size; tn += rn {
-			rn, err := syscall.Read(clientfd, recvbuf[tn:])
+			var err error
+			rn, err = syscall.Read(clientfd, recvbuf[tn:])
 			if err != nil {
 				log.Printf("read failed: %v\n", err)
 				return
@@ -84,5 +84,7 @@ func main() {
 			log.Printf("binary read failed: %v\n", err)
 			return
 		}
+
+		fmt.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
 	}
 }
