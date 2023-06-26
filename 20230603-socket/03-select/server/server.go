@@ -9,6 +9,7 @@ import (
 	"log"
 	"syscall"
 
+	"github.com/cyningsun/go-test/20230603-socket/pkg/fdset"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/proto"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/sockaddr"
 )
@@ -48,19 +49,70 @@ func main() {
 		return
 	}
 
+	var (
+		rset, allset syscall.FdSet
+		client       [syscall.FD_SETSIZE]int
+		i, maxi      int
+	)
+	maxfd := listenfd
+	fdset.Zero(&allset)
+	fdset.Set(&allset, listenfd)
+
 	for {
-		connfd, _, err := syscall.Accept(listenfd)
+
+		rset = allset
+
+		nready, err := syscall.Select(maxfd, &rset, nil, nil, nil)
 		if err != nil {
-			log.Printf("accept failed: %v\n", err)
-			continue
+			log.Printf("select failed: %v\n", err)
+			return
 		}
 
-		log.Printf("Accepted a connection")
+		if fdset.IsSet(&rset, listenfd) {
+			connfd, _, err := syscall.Accept(listenfd)
+			if err != nil {
+				log.Printf("accept failed: %v\n", err)
+				continue
+			}
 
-		go func(fd int) {
-			defer syscall.Close(connfd)
+			log.Printf("Accepted a connection")
 
-			for {
+			for i := 0; i < syscall.FD_SETSIZE; i++ {
+				if client[i] < 0 {
+					client[i] = connfd
+					break
+				}
+			}
+
+			if i == syscall.FD_SETSIZE {
+				log.Printf("too many clients\n")
+				syscall.Close(connfd)
+				return
+			}
+
+			fdset.Set(&allset, connfd)
+
+			if connfd > maxfd {
+				maxfd = connfd
+			}
+
+			if i > maxi {
+				maxi = i
+			}
+
+			nready = nready - 1
+			if nready <= 0 {
+				continue
+			}
+		}
+
+		for i := 0; i <= maxi; i++ {
+			connfd := client[i]
+			if connfd < 0 {
+				continue
+			}
+
+			if fdset.IsSet(&rset, connfd) {
 				args := &proto.Args{}
 				size := binary.Size(*args)
 				recvbuf := make([]byte, 1024)
@@ -70,7 +122,9 @@ func main() {
 					rn, err = syscall.Read(connfd, recvbuf)
 					if err != nil {
 						log.Printf("read failed: %v\n", err)
-						return
+						syscall.Close(connfd)
+						fdset.Clear(&allset, connfd)
+						client[i] = -1
 					}
 
 					if rn <= 0 {
@@ -80,18 +134,33 @@ func main() {
 
 				if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {
 					log.Printf("binary read failed: %v\n", err)
-					return
+					syscall.Close(connfd)
+					fdset.Clear(&allset, connfd)
+					client[i] = -1
 				}
 
 				ret := &proto.Result{Sum: args.Args1 + args.Args2}
 				buf := bytes.NewBuffer([]byte{})
 				if err = binary.Write(buf, binary.BigEndian, ret); err != nil {
 					log.Printf("binary write failed: %v\n", err)
-					return
+					syscall.Close(connfd)
+					fdset.Clear(&allset, connfd)
+					client[i] = -1
 				}
 
-				_, _ = syscall.Write(fd, buf.Bytes())
+				_, err = syscall.Write(connfd, buf.Bytes())
+				if err != nil {
+					log.Printf("write failed: %v\n", err)
+					syscall.Close(connfd)
+					fdset.Clear(&allset, connfd)
+					client[i] = -1
+				}
 			}
-		}(connfd)
+
+			nready = nready - 1
+			if nready <= 0 {
+				continue
+			}
+		}
 	}
 }

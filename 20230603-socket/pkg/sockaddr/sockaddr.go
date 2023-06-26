@@ -1,4 +1,4 @@
-package shared
+package sockaddr
 
 import (
 	"net"
@@ -7,16 +7,7 @@ import (
 	"syscall"
 )
 
-type Args struct {
-	Args1 int64
-	Args2 int64
-}
-
-type Result struct {
-	Sum int64
-}
-
-func ToSockaddr(addr string) (*syscall.SockaddrInet4, error) {
+func Parse(addr string) (*syscall.SockaddrInet4, error) {
 	s := strings.Split(addr, ":")
 
 	ip4 := net.ParseIP(s[0])
