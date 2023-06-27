@@ -54,6 +54,12 @@ func main() {
 		client       [syscall.FD_SETSIZE]int
 		i, maxi      int
 	)
+
+	maxi = -1
+	for i = 0; i < syscall.FD_SETSIZE; i++ {
+		client[i] = -1
+	}
+
 	maxfd := listenfd
 	fdset.Zero(&allset)
 	fdset.Set(&allset, listenfd)
@@ -62,7 +68,7 @@ func main() {
 
 		rset = allset
 
-		nready, err := syscall.Select(maxfd, &rset, nil, nil, nil)
+		nready, err := syscall.Select(maxfd+1, &rset, nil, nil, nil)
 		if err != nil {
 			log.Printf("select failed: %v\n", err)
 			return
@@ -77,7 +83,7 @@ func main() {
 
 			log.Printf("Accepted a connection")
 
-			for i := 0; i < syscall.FD_SETSIZE; i++ {
+			for i = 0; i < syscall.FD_SETSIZE; i++ {
 				if client[i] < 0 {
 					client[i] = connfd
 					break
