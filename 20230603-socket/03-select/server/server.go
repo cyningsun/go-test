@@ -1,4 +1,4 @@
-//go:build linux && arm64
+//go:build linux && amd64
 
 package main
 
@@ -123,14 +123,15 @@ func main() {
 				size := binary.Size(*args)
 				recvbuf := make([]byte, 1024)
 
-				for tn, rn := 0, 0; tn < size; tn += rn {
-					var err error
+				var err error
+				for tn, rn := 0, 0; tn < size && err == nil; tn += rn {
 					rn, err = syscall.Read(connfd, recvbuf)
 					if err != nil {
 						log.Printf("read failed: %v\n", err)
 						syscall.Close(connfd)
 						fdset.Clear(&allset, connfd)
 						client[i] = -1
+						break
 					}
 
 					if rn <= 0 {
@@ -138,11 +139,16 @@ func main() {
 					}
 				}
 
+				if err == syscall.ECONNRESET {
+					continue
+				}
+
 				if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {
 					log.Printf("binary read failed: %v\n", err)
 					syscall.Close(connfd)
 					fdset.Clear(&allset, connfd)
 					client[i] = -1
+					continue
 				}
 
 				ret := &proto.Result{Sum: args.Args1 + args.Args2}
@@ -152,6 +158,7 @@ func main() {
 					syscall.Close(connfd)
 					fdset.Clear(&allset, connfd)
 					client[i] = -1
+					continue
 				}
 
 				_, err = syscall.Write(connfd, buf.Bytes())
@@ -160,6 +167,7 @@ func main() {
 					syscall.Close(connfd)
 					fdset.Clear(&allset, connfd)
 					client[i] = -1
+					continue
 				}
 			}
 

@@ -1,4 +1,4 @@
-//go:build linux && arm64
+//go:build linux && amd64
 
 package main
 
@@ -12,6 +12,7 @@ import (
 
 	"github.com/cyningsun/go-test/20230603-socket/pkg/proto"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/sockaddr"
+	"golang.org/x/sys/unix"
 )
 
 // IP address args from input
@@ -43,49 +44,102 @@ func main() {
 		return
 	}
 
+	stdeof := false
+	const (
+		MAX_OPEN = 1024
+	)
+
+	args := &proto.Args{}
+	ret := &proto.Result{}
 	for {
-		args := &proto.Args{}
-		n, err := fmt.Scanf("%d %d", &args.Args1, &args.Args2)
+		client := []unix.PollFd{
+			{
+				Fd:     int32(clientfd),
+				Events: unix.POLLIN,
+			},
+		}
+
+		if !stdeof {
+			client = append(client, unix.PollFd{
+				Fd:     int32(syscall.Stdin),
+				Events: unix.POLLIN,
+			})
+		}
+
+		client = append(client)
+
+		_, err := unix.Poll(client, -1)
 		if err != nil {
-			log.Printf("scanf failed: %v\n", err)
+			log.Printf("select failed: %v\n", err)
 			return
 		}
 
-		if n != 2 {
-			log.Printf("invalid input")
-			return
-		}
-
-		bytesBuffer := bytes.NewBuffer([]byte{})
-		if err = binary.Write(bytesBuffer, binary.BigEndian, args); err != nil {
-			log.Printf("binary write failed: %v\n", err)
-			return
-		}
-
-		syscall.Write(clientfd, bytesBuffer.Bytes())
-
-		recvbuf := make([]byte, 1024)
-		ret := &proto.Result{}
-
-		size := binary.Size(*ret)
-		for tn, rn := 0, 0; tn < size; tn += rn {
-			var err error
-			rn, err = syscall.Read(clientfd, recvbuf[tn:])
+		switch {
+		case len(client) == 2 && (client[1].Revents&(unix.POLLIN|unix.POLLERR)) != 0:
+			n, err := fmt.Scanf("%d %d", &args.Args1, &args.Args2)
 			if err != nil {
-				log.Printf("read failed: %v\n", err)
+				log.Printf("scanf failed: %v\n", err)
 				return
 			}
 
-			if rn <= 0 {
-				break
+			if n == 0 {
+				stdeof = true
+				client[1].Fd = -1
+				syscall.Shutdown(clientfd, syscall.SHUT_WR)
+				continue
 			}
-		}
 
-		if err = binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, ret); err != nil {
-			log.Printf("binary read failed: %v\n", err)
-			return
-		}
+			if n != 2 {
+				log.Printf("invalid input")
+				return
+			}
 
-		fmt.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
+			bytesBuffer := bytes.NewBuffer([]byte{})
+			if err = binary.Write(bytesBuffer, binary.BigEndian, args); err != nil {
+				log.Printf("binary write failed: %v\n", err)
+				return
+			}
+
+			syscall.Write(clientfd, bytesBuffer.Bytes())
+		case (client[0].Revents & (unix.POLLIN | unix.POLLERR)) != 0:
+			recvbuf := make([]byte, 1024)
+			size, tn := binary.Size(*ret), 0
+			for rn := 0; tn < size; tn += rn {
+				var err error
+				rn, err = syscall.Read(clientfd, recvbuf[tn:])
+				if err != nil {
+					log.Printf("read failed: %v\n", err)
+					return
+				}
+
+				if rn <= 0 {
+					break
+				}
+			}
+
+			if tn == 0 {
+				if stdeof {
+					return
+				} else {
+					fmt.Printf("server terminated\n")
+					return // server terminated
+				}
+			}
+
+			if err = binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, ret); err != nil {
+				log.Printf("binary read failed: %v\n", err)
+				return
+			}
+
+			fmt.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
+		}
 	}
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
 }

@@ -1,4 +1,4 @@
-//go:build linux && arm64
+//go:build linux && amd64
 
 package main
 
@@ -9,7 +9,6 @@ import (
 	"log"
 	"syscall"
 
-	"github.com/cyningsun/go-test/20230603-socket/pkg/fdset"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/proto"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/sockaddr"
 	"golang.org/x/sys/unix"
@@ -53,27 +52,28 @@ func main() {
 	const (
 		MAX_OPEN = 1024
 	)
-	var (
-		client  [MAX_OPEN]unix.PollFd
-		i, maxi int
-	)
+	var i, maxi int
 
-	client[0].Fd = int32(listenfd)
-	client[0].Events = unix.POLLRDNORM
+	client := make([]unix.PollFd, 0, MAX_OPEN)
+	client = append(client, unix.PollFd{
+		Fd:     int32(listenfd),
+		Events: unix.POLLIN,
+	})
 	for i = 1; i < MAX_OPEN; i++ {
+		client = append(client, unix.PollFd{})
 		client[i].Fd = -1
 	}
 	maxi = 0
 
 	for {
 
-		nready, err := unix.Poll(client, maxi+1, unix.INFTIM)
+		nready, err := unix.Poll(client, -1)
 		if err != nil {
 			log.Printf("select failed: %v\n", err)
 			return
 		}
 
-		if (client[0].Revents & unix.POLLRDNORM) != 0 {
+		if (client[0].Revents & unix.POLLIN) != 0 {
 			connfd, _, err := syscall.Accept(listenfd)
 			if err != nil {
 				log.Printf("accept failed: %v\n", err)
@@ -84,7 +84,7 @@ func main() {
 
 			for i = 0; i < MAX_OPEN; i++ {
 				if client[i].Fd < 0 {
-					client[i].Fd = connfd
+					client[i].Fd = int32(connfd)
 					break
 				}
 			}
@@ -95,9 +95,7 @@ func main() {
 				return
 			}
 
-			client[i].Events = unix.POLLRDNORM
-
-			fdset.Set(&allset, connfd)
+			client[i].Events = unix.POLLIN
 
 			if i > maxi {
 				maxi = i
@@ -114,18 +112,19 @@ func main() {
 				continue
 			}
 
-			if (client[i].Revents & (unix.POLLRDNORM | unix.POLLERR)) != 0 {
+			if (client[i].Revents & (unix.POLLIN | unix.POLLERR)) != 0 {
 				args := &proto.Args{}
 				size := binary.Size(*args)
 				recvbuf := make([]byte, 1024)
 
-				for tn, rn := 0, 0; tn < size; tn += rn {
-					var err error
-					rn, err = syscall.Read(client[i].Fd, recvbuf)
+				var err error
+				for tn, rn := 0, 0; tn < size && err == nil; tn += rn {
+					rn, err = syscall.Read(int(client[i].Fd), recvbuf)
 					if err != nil {
 						log.Printf("read failed: %v\n", err)
-						syscall.Close(client[i].Fd)
+						syscall.Close(int(client[i].Fd))
 						client[i].Fd = -1
+						break
 					}
 
 					if rn <= 0 {
@@ -133,25 +132,32 @@ func main() {
 					}
 				}
 
+				if err == syscall.ECONNRESET {
+					continue
+				}
+
 				if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {
 					log.Printf("binary read failed: %v\n", err)
-					syscall.Close(client[i].Fd)
+					syscall.Close(int(client[i].Fd))
 					client[i].Fd = -1
+					continue
 				}
 
 				ret := &proto.Result{Sum: args.Args1 + args.Args2}
 				buf := bytes.NewBuffer([]byte{})
 				if err = binary.Write(buf, binary.BigEndian, ret); err != nil {
 					log.Printf("binary write failed: %v\n", err)
-					syscall.Close(client[i].Fd)
+					syscall.Close(int(client[i].Fd))
 					client[i].Fd = -1
+					continue
 				}
 
-				_, err = syscall.Write(client[i].Fd, buf.Bytes())
+				_, err = syscall.Write(int(client[i].Fd), buf.Bytes())
 				if err != nil {
 					log.Printf("write failed: %v\n", err)
-					syscall.Close(client[i].Fd)
+					syscall.Close(int(client[i].Fd))
 					client[i].Fd = -1
+					continue
 				}
 			}
 
