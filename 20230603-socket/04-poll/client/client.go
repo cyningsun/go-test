@@ -45,9 +45,6 @@ func main() {
 	}
 
 	stdeof := false
-	const (
-		MAX_OPEN = 1024
-	)
 
 	args := &proto.Args{}
 	ret := &proto.Result{}
@@ -70,7 +67,7 @@ func main() {
 
 		_, err := unix.Poll(client, -1)
 		if err != nil {
-			log.Printf("select failed: %v\n", err)
+			log.Printf("poll failed: %v\n", err)
 			return
 		}
 
@@ -134,12 +131,4 @@ func main() {
 			fmt.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
 		}
 	}
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-
-	return b
 }

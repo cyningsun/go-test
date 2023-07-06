@@ -69,7 +69,7 @@ func main() {
 
 		nready, err := unix.Poll(client, -1)
 		if err != nil {
-			log.Printf("select failed: %v\n", err)
+			log.Printf("poll failed: %v\n", err)
 			return
 		}
 
@@ -92,7 +92,8 @@ func main() {
 			if i == MAX_OPEN {
 				log.Printf("too many clients\n")
 				syscall.Close(connfd)
-				return
+				client[i].Fd = -1
+				continue
 			}
 
 			client[i].Events = unix.POLLIN
@@ -107,7 +108,7 @@ func main() {
 			}
 		}
 
-		for i := 0; i <= maxi; i++ {
+		for i := 1; i <= maxi; i++ {
 			if client[i].Fd < 0 {
 				continue
 			}

@@ -6,12 +6,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"flag"
+	"fmt"
 	"log"
+	"os"
 	"syscall"
 
-	"github.com/cyningsun/go-test/20230603-socket/pkg/fdset"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/proto"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/sockaddr"
+	"golang.org/x/sys/unix"
 )
 
 var addr string
@@ -49,89 +51,84 @@ func main() {
 		return
 	}
 
-	var (
-		rset, allset syscall.FdSet
-		client       [syscall.FD_SETSIZE]int
-		i, maxi      int
+	const (
+		MAX_OPEN = 1024
 	)
 
-	maxi = -1
-	for i = 0; i < syscall.FD_SETSIZE; i++ {
-		client[i] = -1
+	evts := make([]syscall.EpollEvent, 0, MAX_OPEN)
+	evts = append(evts, syscall.EpollEvent{
+		Fd:     int32(listenfd),
+		Events: unix.POLLIN,
+	})
+	for i := 1; i < MAX_OPEN; i++ {
+		evts = append(evts, syscall.EpollEvent{})
+		evts[i].Fd = -1
 	}
 
-	maxfd := listenfd
-	fdset.Zero(&allset)
-	fdset.Set(&allset, listenfd)
+	epfd, e := syscall.EpollCreate1(0)
+	if e != nil {
+		fmt.Println("epoll_create1 failed: ", e)
+		os.Exit(1)
+	}
+	defer syscall.Close(epfd)
+
+	if err = syscall.EpollCtl(epfd, syscall.EPOLL_CTL_ADD, listenfd, &evts[0]); e != nil {
+		fmt.Println("epoll_ctl failed: ", e)
+		return
+	}
 
 	for {
 
-		rset = allset
-
-		nready, err := syscall.Select(maxfd+1, &rset, nil, nil, nil)
+		nready, err := syscall.EpollWait(epfd, evts, -1)
 		if err != nil {
-			log.Printf("select failed: %v\n", err)
+			log.Printf("epollwait failed: %v\n", err)
 			return
 		}
 
-		if fdset.IsSet(&rset, listenfd) {
-			connfd, _, err := syscall.Accept(listenfd)
-			if err != nil {
-				log.Printf("accept failed: %v\n", err)
-				continue
-			}
-
-			log.Printf("Accepted a connection")
-
-			for i = 0; i < syscall.FD_SETSIZE; i++ {
-				if client[i] < 0 {
-					client[i] = connfd
-					break
+		for i := 0; i <= nready; i++ {
+			switch {
+			case evts[i].Fd == int32(listenfd):
+				connfd, _, err := syscall.Accept(listenfd)
+				if err != nil {
+					log.Printf("accept failed: %v\n", err)
+					continue
 				}
-			}
 
-			if i == syscall.FD_SETSIZE {
-				log.Printf("too many clients\n")
-				syscall.Close(connfd)
-				client[i] = -1
-				continue
-			}
+				log.Printf("Accepted a connection")
 
-			fdset.Set(&allset, connfd)
+				for i = 0; i < MAX_OPEN; i++ {
+					if evts[i].Fd < 0 {
+						evts[i].Fd = int32(connfd)
+						break
+					}
+				}
 
-			if connfd > maxfd {
-				maxfd = connfd
-			}
+				if i == MAX_OPEN {
+					log.Printf("too many clients\n")
+					evts[i].Fd = -1
+					continue
+				}
 
-			if i > maxi {
-				maxi = i
-			}
+				evts[i].Events = unix.POLLIN
 
-			nready = nready - 1
-			if nready <= 0 {
-				continue
-			}
-		}
+				if err = syscall.EpollCtl(epfd, syscall.EPOLL_CTL_ADD, connfd, &evts[i]); e != nil {
+					fmt.Println("epoll_ctl failed: ", e)
+					evts[i].Fd = -1
+					continue
+				}
 
-		for i := 1; i <= maxi; i++ {
-			connfd := client[i]
-			if connfd < 0 {
-				continue
-			}
-
-			if fdset.IsSet(&rset, connfd) {
+			default:
 				args := &proto.Args{}
 				size := binary.Size(*args)
 				recvbuf := make([]byte, 1024)
 
 				var err error
 				for tn, rn := 0, 0; tn < size && err == nil; tn += rn {
-					rn, err = syscall.Read(connfd, recvbuf)
+					rn, err = syscall.Read(int(evts[i].Fd), recvbuf)
 					if err != nil {
 						log.Printf("read failed: %v\n", err)
-						syscall.Close(connfd)
-						fdset.Clear(&allset, connfd)
-						client[i] = -1
+						syscall.Close(int(evts[i].Fd))
+						evts[i].Fd = -1
 						break
 					}
 
@@ -146,9 +143,8 @@ func main() {
 
 				if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {
 					log.Printf("binary read failed: %v\n", err)
-					syscall.Close(connfd)
-					fdset.Clear(&allset, connfd)
-					client[i] = -1
+					syscall.Close(int(evts[i].Fd))
+					evts[i].Fd = -1
 					continue
 				}
 
@@ -156,25 +152,18 @@ func main() {
 				buf := bytes.NewBuffer([]byte{})
 				if err = binary.Write(buf, binary.BigEndian, ret); err != nil {
 					log.Printf("binary write failed: %v\n", err)
-					syscall.Close(connfd)
-					fdset.Clear(&allset, connfd)
-					client[i] = -1
+					syscall.Close(int(evts[i].Fd))
+					evts[i].Fd = -1
 					continue
 				}
 
-				_, err = syscall.Write(connfd, buf.Bytes())
+				_, err = syscall.Write(int(evts[i].Fd), buf.Bytes())
 				if err != nil {
 					log.Printf("write failed: %v\n", err)
-					syscall.Close(connfd)
-					fdset.Clear(&allset, connfd)
-					client[i] = -1
+					syscall.Close(int(evts[i].Fd))
+					evts[i].Fd = -1
 					continue
 				}
-			}
-
-			nready = nready - 1
-			if nready <= 0 {
-				continue
 			}
 		}
 	}
