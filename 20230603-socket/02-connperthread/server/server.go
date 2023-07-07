@@ -9,6 +9,7 @@ import (
 	"log"
 	"syscall"
 
+	"github.com/cyningsun/go-test/20230603-socket/pkg/ioutil"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/proto"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/sockaddr"
 )
@@ -23,12 +24,12 @@ func main() {
 		log.Fatal("invalid ip address")
 	}
 
-	listenfd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
+	listenfd, err := ioutil.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		log.Printf("create socket failed: %v\n", err)
 		return
 	}
-	defer syscall.Close(listenfd)
+	defer ioutil.Close(listenfd)
 
 	sa, err := sockaddr.Parse(addr)
 	if err != nil {
@@ -36,20 +37,20 @@ func main() {
 		return
 	}
 
-	syscall.SetsockoptInt(listenfd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+	ioutil.SetsockoptInt(listenfd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 
-	if err := syscall.Bind(listenfd, sa); err != nil {
+	if err := ioutil.Bind(listenfd, sa); err != nil {
 		log.Printf("bind failed: %v\n", err)
 		return
 	}
 
-	if err := syscall.Listen(listenfd, 1024); err != nil {
+	if err := ioutil.Listen(listenfd, 1024); err != nil {
 		log.Printf("listen failed: %v\n", err)
 		return
 	}
 
 	for {
-		connfd, _, err := syscall.Accept(listenfd)
+		connfd, _, err := ioutil.Accept(listenfd)
 		if err != nil {
 			log.Printf("accept failed: %v\n", err)
 			continue
@@ -58,7 +59,7 @@ func main() {
 		log.Printf("Accepted a connection")
 
 		go func(fd int) {
-			defer syscall.Close(connfd)
+			defer ioutil.Close(connfd)
 
 			for {
 				args := &proto.Args{}
@@ -67,7 +68,7 @@ func main() {
 
 				for tn, rn := 0, 0; tn < size; tn += rn {
 					var err error
-					rn, err = syscall.Read(connfd, recvbuf)
+					rn, err = ioutil.Read(connfd, recvbuf)
 					if err != nil {
 						log.Printf("read failed: %v\n", err)
 						return
@@ -90,7 +91,7 @@ func main() {
 					return
 				}
 
-				_, _ = syscall.Write(fd, buf.Bytes())
+				_, _ = ioutil.Write(fd, buf.Bytes())
 			}
 		}(connfd)
 	}

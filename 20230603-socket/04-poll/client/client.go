@@ -10,6 +10,7 @@ import (
 	"log"
 	"syscall"
 
+	"github.com/cyningsun/go-test/20230603-socket/pkg/ioutil"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/proto"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/sockaddr"
 	"golang.org/x/sys/unix"
@@ -26,12 +27,12 @@ func main() {
 		log.Fatal("invalid ip address")
 	}
 
-	clientfd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
+	clientfd, err := ioutil.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		log.Printf("create socket failed: %v\n", err)
 		return
 	}
-	defer syscall.Close(clientfd)
+	defer ioutil.Close(clientfd)
 
 	sa, err := sockaddr.Parse(addr)
 	if err != nil {
@@ -39,7 +40,7 @@ func main() {
 		return
 	}
 
-	if err := syscall.Connect(clientfd, sa); err != nil {
+	if err := ioutil.Connect(clientfd, sa); err != nil {
 		log.Printf("connect failed: %v\n", err)
 		return
 	}
@@ -82,7 +83,7 @@ func main() {
 			if n == 0 {
 				stdeof = true
 				client[1].Fd = -1
-				syscall.Shutdown(clientfd, syscall.SHUT_WR)
+				ioutil.Shutdown(clientfd, syscall.SHUT_WR)
 				continue
 			}
 
@@ -97,13 +98,13 @@ func main() {
 				return
 			}
 
-			syscall.Write(clientfd, bytesBuffer.Bytes())
+			ioutil.Write(clientfd, bytesBuffer.Bytes())
 		case (client[0].Revents & (unix.POLLIN | unix.POLLERR)) != 0:
 			recvbuf := make([]byte, 1024)
 			size, tn := binary.Size(*ret), 0
 			for rn := 0; tn < size; tn += rn {
 				var err error
-				rn, err = syscall.Read(clientfd, recvbuf[tn:])
+				rn, err = ioutil.Read(clientfd, recvbuf[tn:])
 				if err != nil {
 					log.Printf("read failed: %v\n", err)
 					return

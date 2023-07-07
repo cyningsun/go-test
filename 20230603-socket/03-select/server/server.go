@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/cyningsun/go-test/20230603-socket/pkg/fdset"
+	"github.com/cyningsun/go-test/20230603-socket/pkg/ioutil"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/proto"
 	"github.com/cyningsun/go-test/20230603-socket/pkg/sockaddr"
 )
@@ -24,12 +25,12 @@ func main() {
 		log.Fatal("invalid ip address")
 	}
 
-	listenfd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
+	listenfd, err := ioutil.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		log.Printf("create socket failed: %v\n", err)
 		return
 	}
-	defer syscall.Close(listenfd)
+	defer ioutil.Close(listenfd)
 
 	sa, err := sockaddr.Parse(addr)
 	if err != nil {
@@ -37,14 +38,14 @@ func main() {
 		return
 	}
 
-	syscall.SetsockoptInt(listenfd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+	ioutil.SetsockoptInt(listenfd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 
-	if err := syscall.Bind(listenfd, sa); err != nil {
+	if err := ioutil.Bind(listenfd, sa); err != nil {
 		log.Printf("bind failed: %v\n", err)
 		return
 	}
 
-	if err := syscall.Listen(listenfd, 1024); err != nil {
+	if err := ioutil.Listen(listenfd, 1024); err != nil {
 		log.Printf("listen failed: %v\n", err)
 		return
 	}
@@ -68,14 +69,14 @@ func main() {
 
 		rset = allset
 
-		nready, err := syscall.Select(maxfd+1, &rset, nil, nil, nil)
+		nready, err := ioutil.Select(maxfd+1, &rset, nil, nil, nil)
 		if err != nil {
 			log.Printf("select failed: %v\n", err)
 			return
 		}
 
 		if fdset.IsSet(&rset, listenfd) {
-			connfd, _, err := syscall.Accept(listenfd)
+			connfd, _, err := ioutil.Accept(listenfd)
 			if err != nil {
 				log.Printf("accept failed: %v\n", err)
 				continue
@@ -92,7 +93,7 @@ func main() {
 
 			if i == syscall.FD_SETSIZE {
 				log.Printf("too many clients\n")
-				syscall.Close(connfd)
+				ioutil.Close(connfd)
 				client[i] = -1
 				continue
 			}
@@ -126,10 +127,10 @@ func main() {
 
 				var err error
 				for tn, rn := 0, 0; tn < size && err == nil; tn += rn {
-					rn, err = syscall.Read(connfd, recvbuf)
+					rn, err = ioutil.Read(connfd, recvbuf)
 					if err != nil {
 						log.Printf("read failed: %v\n", err)
-						syscall.Close(connfd)
+						ioutil.Close(connfd)
 						fdset.Clear(&allset, connfd)
 						client[i] = -1
 						break
@@ -140,13 +141,13 @@ func main() {
 					}
 				}
 
-				if err == syscall.ECONNRESET {
+				if err != nil {
 					continue
 				}
 
 				if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {
 					log.Printf("binary read failed: %v\n", err)
-					syscall.Close(connfd)
+					ioutil.Close(connfd)
 					fdset.Clear(&allset, connfd)
 					client[i] = -1
 					continue
@@ -156,13 +157,13 @@ func main() {
 				buf := bytes.NewBuffer([]byte{})
 				if err = binary.Write(buf, binary.BigEndian, ret); err != nil {
 					log.Printf("binary write failed: %v\n", err)
-					syscall.Close(connfd)
+					ioutil.Close(connfd)
 					fdset.Clear(&allset, connfd)
 					client[i] = -1
 					continue
 				}
 
-				_, err = syscall.Write(connfd, buf.Bytes())
+				_, err = ioutil.Write(connfd, buf.Bytes())
 				if err != nil {
 					log.Printf("write failed: %v\n", err)
 					syscall.Close(connfd)
