@@ -81,7 +81,7 @@ func main() {
 				continue
 			}
 
-			log.Printf("Accepted a connection")
+			log.Printf("accepted a connection")
 
 			for i = 0; i < MAX_OPEN; i++ {
 				if client[i].Fd < 0 {
@@ -120,12 +120,10 @@ func main() {
 				recvbuf := make([]byte, 1024)
 
 				var err error
-				for tn, rn := 0, 0; tn < size && err == nil; tn += rn {
+				tn, rn := 0, 0
+				for tn, rn = 0, 0; tn < size && err == nil; tn += rn {
 					rn, err = ioutil.Read(int(client[i].Fd), recvbuf)
 					if err != nil {
-						log.Printf("read failed: %v\n", err)
-						ioutil.Close(int(client[i].Fd))
-						client[i].Fd = -1
 						break
 					}
 
@@ -134,8 +132,17 @@ func main() {
 					}
 				}
 
-				if err != nil {
+				if tn == 0 || err == ioutil.ECONNRESET {
+					ioutil.Close(int(client[i].Fd))
+					client[i].Fd = -1
+					log.Printf("client closed\n")
 					continue
+				}
+
+				if err != nil {
+					log.Printf("read failed: %v\n", err)
+					ioutil.Close(int(client[i].Fd))
+					client[i].Fd = -1
 				}
 
 				if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {

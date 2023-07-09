@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"syscall"
@@ -56,9 +55,9 @@ func main() {
 		MAX_OPEN = 1024
 	)
 
-	epfd, e := ioutil.EpollCreate1(0)
-	if e != nil {
-		fmt.Println("epoll_create1 failed: ", e)
+	epfd, err := ioutil.EpollCreate1(0)
+	if err != nil {
+		log.Printf("epoll_create1 failed: %v\n", err)
 		os.Exit(1)
 	}
 	defer ioutil.Close(epfd)
@@ -66,8 +65,8 @@ func main() {
 	if err = ioutil.EpollCtl(epfd, syscall.EPOLL_CTL_ADD, listenfd, &syscall.EpollEvent{
 		Fd:     int32(listenfd),
 		Events: syscall.EPOLLIN,
-	}); e != nil {
-		fmt.Println("epoll_ctl failed: ", e)
+	}); err != nil {
+		log.Printf("epoll_ctl failed: %v\n", err)
 		return
 	}
 
@@ -92,13 +91,13 @@ func main() {
 				if err = ioutil.EpollCtl(epfd, syscall.EPOLL_CTL_ADD, connfd, &syscall.EpollEvent{
 					Fd:     int32(connfd),
 					Events: syscall.EPOLLIN,
-				}); e != nil {
-					fmt.Println("epoll_ctl failed: ", e)
+				}); err != nil {
+					log.Printf("epoll_ctl failed: %v\n", err)
 					evts[i].Fd = -1
 					continue
 				}
 
-				log.Printf("Accepted a connection")
+				log.Printf("accepted a connection")
 
 			default:
 				args := &proto.Args{}
@@ -106,12 +105,10 @@ func main() {
 				recvbuf := make([]byte, 1024)
 
 				var err error
-				for tn, rn := 0, 0; tn < size && err == nil; tn += rn {
+				tn, rn := 0, 0
+				for tn, rn = 0, 0; tn < size && err == nil; tn += rn {
 					rn, err = ioutil.Read(int(evts[i].Fd), recvbuf)
 					if err != nil {
-						log.Printf("read failed: %v\n", err)
-						ioutil.Close(int(evts[i].Fd))
-						evts[i].Fd = -1
 						break
 					}
 
@@ -120,7 +117,17 @@ func main() {
 					}
 				}
 
+				if tn == 0 || err == ioutil.ECONNRESET {
+					log.Printf("connection reset by peer\n")
+					ioutil.Close(int(evts[i].Fd))
+					evts[i].Fd = -1
+					continue
+				}
+
 				if err != nil {
+					log.Printf("read failed: %v\n", err)
+					ioutil.Close(int(evts[i].Fd))
+					evts[i].Fd = -1
 					continue
 				}
 

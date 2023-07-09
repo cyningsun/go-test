@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"flag"
-	"fmt"
 	"log"
 	"syscall"
 
@@ -69,7 +68,7 @@ func main() {
 			return -1, err
 		}
 
-		log.Printf("Accepted a connection")
+		log.Printf("accepted a connection")
 
 		if err := ioutil.SetNonblock(connfd, true); err != nil {
 			log.Printf("set nonblock failed: %v\n", err)
@@ -85,7 +84,7 @@ func main() {
 		recvbuf := make([]byte, 1024)
 
 		var err error
-		var tn, rn int
+		tn, rn := 0, 0
 		for tn, rn = 0, 0; tn < size && err == nil; tn += rn {
 			rn, err = ioutil.Read(connfd, recvbuf)
 			if err != nil {
@@ -96,6 +95,10 @@ func main() {
 			if rn <= 0 {
 				break
 			}
+		}
+
+		if tn == 0 || err == ioutil.ECONNRESET {
+			return ioutil.ECONNRESET
 		}
 
 		if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {
@@ -147,7 +150,7 @@ func newReactor(listenfd int) (*Reactor, error) {
 		Fd:     int32(listenfd),
 		Events: syscall.EPOLLIN,
 	}); err != nil {
-		fmt.Println("epoll_ctl failed: ", err)
+		log.Printf("epoll ctl failed: %v\n", err)
 		return nil, err
 	}
 
@@ -178,23 +181,28 @@ func (r *Reactor) EpollWait() error {
 		if int(events[i].Fd) == r.listenfd {
 			connfd, err := r.acceptor(int(events[i].Fd))
 			if err != nil {
-				return err
+				continue
 			}
 
 			if err = ioutil.EpollCtl(r.epfd, syscall.EPOLL_CTL_ADD, connfd, &syscall.EpollEvent{
 				Fd:     int32(connfd),
 				Events: syscall.EPOLLIN,
 			}); err != nil {
-				fmt.Println("epoll_ctl failed: ", err)
+				log.Printf("epoll ctl failed: %v\n", err)
 				ioutil.Close(connfd)
-				return err
+				continue
 			}
 		} else {
 			err := r.handler(int(events[i].Fd))
-			if err != nil {
+			if err == ioutil.ECONNRESET {
+				log.Printf("connection reset by peer\n")
 				ioutil.Close(int(events[i].Fd))
 				ioutil.EpollCtl(r.epfd, syscall.EPOLL_CTL_DEL, int(events[i].Fd), nil)
-				return err
+				continue
+			} else if err != nil {
+				ioutil.Close(int(events[i].Fd))
+				ioutil.EpollCtl(r.epfd, syscall.EPOLL_CTL_DEL, int(events[i].Fd), nil)
+				continue
 			}
 		}
 	}

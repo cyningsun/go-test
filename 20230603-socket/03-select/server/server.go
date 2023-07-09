@@ -82,7 +82,7 @@ func main() {
 				continue
 			}
 
-			log.Printf("Accepted a connection")
+			log.Printf("accepted a connection")
 
 			for i = 0; i < syscall.FD_SETSIZE; i++ {
 				if client[i] < 0 {
@@ -114,7 +114,7 @@ func main() {
 			}
 		}
 
-		for i := 1; i <= maxi; i++ {
+		for i := 0; i <= maxi; i++ {
 			connfd := client[i]
 			if connfd < 0 {
 				continue
@@ -126,13 +126,10 @@ func main() {
 				recvbuf := make([]byte, 1024)
 
 				var err error
-				for tn, rn := 0, 0; tn < size && err == nil; tn += rn {
+				tn, rn := 0, 0
+				for tn, rn = 0, 0; tn < size && err == nil; tn += rn {
 					rn, err = ioutil.Read(connfd, recvbuf)
 					if err != nil {
-						log.Printf("read failed: %v\n", err)
-						ioutil.Close(connfd)
-						fdset.Clear(&allset, connfd)
-						client[i] = -1
 						break
 					}
 
@@ -141,7 +138,19 @@ func main() {
 					}
 				}
 
+				if tn == 0 || err == ioutil.ECONNRESET {
+					log.Printf("client closed\n")
+					ioutil.Close(connfd)
+					fdset.Clear(&allset, connfd)
+					client[i] = -1
+					continue
+				}
+
 				if err != nil {
+					log.Printf("read failed: %v\n", err)
+					ioutil.Close(connfd)
+					fdset.Clear(&allset, connfd)
+					client[i] = -1
 					continue
 				}
 

@@ -48,7 +48,7 @@ func main() {
 
 	epfd, e := ioutil.EpollCreate1(0)
 	if e != nil {
-		fmt.Println("epoll_create1 failed: ", e)
+		log.Printf("epollcreate1 failed: %v\n", e)
 		return
 	}
 	defer ioutil.Close(epfd)
@@ -130,7 +130,7 @@ func main() {
 					if stdeof {
 						return
 					} else {
-						fmt.Printf("server terminated\n")
+						log.Printf("server terminated\n")
 						return // server terminated
 					}
 				}
@@ -140,7 +140,7 @@ func main() {
 					return
 				}
 
-				fmt.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
+				log.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
 			}
 		}
 	}

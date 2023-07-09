@@ -56,7 +56,7 @@ func main() {
 			continue
 		}
 
-		log.Printf("Accepted a connection")
+		log.Printf("accepted a connection")
 
 		go func(fd int) {
 			defer ioutil.Close(connfd)
@@ -66,7 +66,8 @@ func main() {
 				size := binary.Size(*args)
 				recvbuf := make([]byte, 1024)
 
-				for tn, rn := 0, 0; tn < size; tn += rn {
+				tn, rn := 0, 0
+				for tn, rn = 0, 0; tn < size; tn += rn {
 					var err error
 					rn, err = ioutil.Read(connfd, recvbuf)
 					if err != nil {
@@ -77,6 +78,11 @@ func main() {
 					if rn <= 0 {
 						break
 					}
+				}
+
+				if tn == 0 {
+					log.Printf("connection reset by peer\n")
+					return
 				}
 
 				if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {

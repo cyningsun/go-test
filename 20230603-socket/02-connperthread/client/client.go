@@ -69,7 +69,8 @@ func main() {
 		ret := &proto.Result{}
 
 		size := binary.Size(*ret)
-		for tn, rn := 0, 0; tn < size; tn += rn {
+		tn, rn := 0, 0
+		for tn, rn = 0, 0; tn < size; tn += rn {
 			var err error
 			rn, err = ioutil.Read(clientfd, recvbuf[tn:])
 			if err != nil {
@@ -82,11 +83,16 @@ func main() {
 			}
 		}
 
+		if tn == 0 {
+			log.Printf("server terminated\n")
+			return
+		}
+
 		if err = binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, ret); err != nil {
 			log.Printf("binary read failed: %v\n", err)
 			return
 		}
 
-		fmt.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
+		log.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
 	}
 }

@@ -39,7 +39,7 @@ func main() {
 			continue
 		}
 
-		log.Printf("Accepted a connection")
+		log.Printf("accepted a connection")
 
 		now := time.Now()
 		buf := now.Format("2006-01-02 15:04:05")

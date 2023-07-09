@@ -119,7 +119,7 @@ func main() {
 				if stdeof {
 					return
 				} else {
-					fmt.Printf("server terminated\n")
+					log.Printf("server terminated\n")
 					return // server terminated
 				}
 			}
@@ -129,7 +129,7 @@ func main() {
 				return
 			}
 
-			fmt.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
+			log.Printf("expect: %d, actual: %d\n", args.Args1+args.Args2, ret.Sum)
 		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"sync"
 	"syscall"
 
 	"github.com/cyningsun/go-test/20230603-socket/pkg/ioutil"
@@ -20,6 +21,8 @@ const (
 )
 
 var addr string
+
+type Hdlr func(int)
 
 func main() {
 	flag.StringVar(&addr, "addr", "", "ip address")
@@ -68,106 +71,105 @@ func main() {
 }
 
 type ReactorMgr struct {
-	mainReactor *Reactor
-	subReactors []*Reactor
+	reactors []*Reactor
 }
 
-func newReactorMgr(listenfd int, subReactorNums int) (*ReactorMgr, error) {
-	rm := &ReactorMgr{}
-
+func newReactorMgr(listenfd int, reactorNums int) (*ReactorMgr, error) {
 	var err error
-	srs := make([]*Reactor, subReactorNums)
-	for i := 0; i < subReactorNums; i++ {
-		srs[i], err = newReactor(rm, listenfd)
+	srs := make([]*Reactor, reactorNums)
+	for i := 0; i < reactorNums; i++ {
+		srs[i], err = newReactor()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	mr, err := newReactor(rm, listenfd)
-	if err != nil {
-		return nil, err
+	rm := &ReactorMgr{
+		reactors: srs,
 	}
 
-	rm.mainReactor = mr
-	rm.subReactors = srs
-	rm.mainReactor.RegisterAcceptor(rm.acceptor)
-	for _, sr := range rm.subReactors {
-		sr.RegisterHandler(rm.handler)
-	}
+	reactor, _ := rm.Pick(listenfd)
+	reactor.OnAccept(listenfd, rm.acceptor)
 
 	return rm, nil
 }
 
 func (rm *ReactorMgr) Run() error {
-	for _, sr := range rm.subReactors {
-		go func(sr *Reactor) {
+	var wg sync.WaitGroup
+	wg.Add(len(rm.reactors))
+
+	for _, r := range rm.reactors {
+		go func(iwg *sync.WaitGroup, ir *Reactor) {
+			defer iwg.Done()
+
 			for {
-				if err := sr.EpollWait(); err != nil {
+				if err := ir.EpollWait(); err != nil {
 					log.Printf("epoll wait failed: %v\n", err)
 					return
 				}
 			}
-		}(sr)
+		}(&wg, r)
 	}
 
-	for {
-		if err := rm.mainReactor.EpollWait(); err != nil {
-			log.Printf("epoll wait failed: %v\n", err)
-			return err
-		}
-	}
-}
-
-func (rm *ReactorMgr) Close() error {
-	if err := rm.mainReactor.Close(); err != nil {
-		return err
-	}
-
-	for _, sr := range rm.subReactors {
-		if err := sr.Close(); err != nil {
-			return err
-		}
-	}
+	wg.Wait()
 
 	return nil
 }
 
-func (rm *ReactorMgr) acceptor(listenfd int) (int, error) {
+func (rm *ReactorMgr) Close() error {
+	for _, sr := range rm.reactors {
+		if err := sr.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (rm *ReactorMgr) acceptor(listenfd int) {
+	_, id := rm.Pick(listenfd)
+	prefix := fmt.Sprintf("r:%d", id)
+
 	connfd, _, err := ioutil.Accept(listenfd)
 	if err != nil {
 		log.Printf("accept failed: %v\n", err)
-		return -1, err
+		return
 	}
 
-	log.Printf("Accepted a connection")
+	log.Printf("[%s]accepted a connection", prefix)
 
 	if err := ioutil.SetNonblock(connfd, true); err != nil {
 		log.Printf("set nonblock failed: %v\n", err)
-		return -1, err
+		return
 	}
 
-	return connfd, nil
+	reactor, idx := rm.Pick(connfd)
+	reactor.OnAccept(connfd, rm.handler)
+
+	log.Printf("[%s]dispatched to subreactor %d", prefix, idx)
 }
 
 // Pick up a subreactor to handle the connection
 func (rm *ReactorMgr) Pick(fd int) (*Reactor, int) {
-	idx := fd % len(rm.subReactors)
-	subReactor := rm.subReactors[idx]
+	idx := fd % len(rm.reactors)
+	subReactor := rm.reactors[idx]
 	return subReactor, idx
 }
 
-func (rm *ReactorMgr) handler(connfd int) error {
+func (rm *ReactorMgr) handler(listenfd int) {
+	reactor, id := rm.Pick(listenfd)
+	prefix := fmt.Sprintf("r:%d", id)
+
 	args := &proto.Args{}
 	size := binary.Size(*args)
-	recvbuf := make([]byte, MAX_OPEN)
+	recvbuf := make([]byte, 1024)
 
 	var err error
-	for tn, rn := 0, 0; tn < size && err == nil; tn += rn {
-		rn, err = ioutil.Read(connfd, recvbuf)
+	tn, rn := 0, 0
+	for tn, rn = 0, 0; tn < size && err == nil; tn += rn {
+		rn, err = ioutil.Read(listenfd, recvbuf)
 		if err != nil {
-			log.Printf("read failed: %v\n", err)
-			return err
+			log.Printf("[%s]read failed: %v\n", prefix, err)
+			break
 		}
 
 		if rn <= 0 {
@@ -175,110 +177,100 @@ func (rm *ReactorMgr) handler(connfd int) error {
 		}
 	}
 
+	if tn == 0 || err == ioutil.ECONNRESET {
+		log.Printf("[%s]connection reset by peer", prefix)
+		reactor.OnClose(listenfd)
+		ioutil.Close(listenfd)
+		return
+	}
+
+	if err != nil {
+		reactor.OnClose(listenfd)
+		ioutil.Close(listenfd)
+		return
+	}
+
 	if err := binary.Read(bytes.NewBuffer(recvbuf[:size]), binary.BigEndian, args); err != nil {
-		log.Printf("binary read failed: %v\n", err)
-		return err
+		log.Printf("[%s]binary read failed: %v\n", prefix, err)
+		return
 	}
 
 	ret := &proto.Result{Sum: args.Args1 + args.Args2}
 	buf := bytes.NewBuffer([]byte{})
 	if err = binary.Write(buf, binary.BigEndian, ret); err != nil {
-		log.Printf("binary write failed: %v\n", err)
-		return err
+		log.Printf("[%s]binary write failed: %v\n", prefix, err)
+		return
 	}
 
-	_, err = ioutil.Write(connfd, buf.Bytes())
+	_, err = ioutil.Write(listenfd, buf.Bytes())
 	if err != nil {
-		log.Printf("write failed: %v\n", err)
-		return err
+		log.Printf("[%s]write failed: %v\n", prefix, err)
+		return
 	}
-
-	return nil
 }
 
 type Reactor struct {
-	listenfd int
-	epfd     int
-	acceptor func(listenfd int) (int, error)
-	handler  func(connfd int) error
-	rm       *ReactorMgr
+	epfd  int
+	hdlrs sync.Map
 }
 
-func newReactor(rm *ReactorMgr, listenfd int) (*Reactor, error) {
+func newReactor() (*Reactor, error) {
 	epfd, err := ioutil.EpollCreate1(0)
 	if err != nil {
 		return nil, err
 	}
 
-	event := &syscall.EpollEvent{
-		Events: syscall.EPOLLIN,
-		Fd:     int32(listenfd),
-	}
-	err = ioutil.EpollCtl(epfd, syscall.EPOLL_CTL_ADD, listenfd, event)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Reactor{
-		listenfd: listenfd,
-		epfd:     epfd,
-		rm:       rm,
+		epfd: epfd,
 	}, nil
 }
 
-func (r *Reactor) RegisterAcceptor(acceptor func(listenfd int) (int, error)) {
-	r.acceptor = acceptor
-}
-
-func (r *Reactor) RegisterHandler(handler func(connfd int) error) {
-	r.handler = handler
-}
-
 func (r *Reactor) EpollWait() error {
-	events := make([]syscall.EpollEvent, 1024)
-	for i := 0; i < len(events); i++ {
-		events[i].Fd = -1
-	}
+	events := make([]syscall.EpollEvent, MAX_OPEN)
 
-	n, err := ioutil.EpollWait(r.epfd, events, -1)
+	nready, err := ioutil.EpollWait(r.epfd, events, -1)
 	if err != nil {
 		log.Printf("epoll wait failed: %v\n", err)
 		return err
 	}
 
-	for i := 0; i < n; i++ {
-		if int(events[i].Fd) == r.listenfd {
-			connfd, err := r.acceptor(int(events[i].Fd))
-			if err != nil {
-				return err
-			}
-
-			reactor, idx := r.rm.Pick(connfd)
-			if err = reactor.EpollCtl(connfd, syscall.EPOLL_CTL_ADD, &syscall.EpollEvent{
-				Fd:     int32(connfd),
-				Events: syscall.EPOLLIN,
-			}); err != nil {
-				fmt.Println("epoll_ctl failed: ", err)
-				ioutil.Close(connfd)
-				return err
-			}
-
-			log.Printf("dispatched to subreactor %d", idx)
-		} else {
-			err := r.handler(int(events[i].Fd))
-			if err != nil {
-				ioutil.Close(int(events[i].Fd))
-				ioutil.EpollCtl(r.epfd, syscall.EPOLL_CTL_DEL, int(events[i].Fd), nil)
-				return err
-			}
+	for i := 0; i < nready; i++ {
+		found, ok := r.hdlrs.Load(events[i].Fd)
+		if !ok {
+			log.Printf("handler not found for fd %d\n", events[i].Fd)
+			continue
 		}
+
+		hdlr, ok := found.(Hdlr)
+		if !ok {
+			log.Printf("handler type not match for fd %d\n", events[i].Fd)
+		}
+
+		hdlr(int(events[i].Fd))
 	}
 
 	return nil
 }
 
-func (r *Reactor) EpollCtl(fd int, op int, event *syscall.EpollEvent) error {
-	return ioutil.EpollCtl(r.epfd, op, fd, event)
+func (r *Reactor) OnAccept(fd int, hdlr Hdlr) {
+	if err := ioutil.EpollCtl(r.epfd, syscall.EPOLL_CTL_ADD, fd, &syscall.EpollEvent{
+		Fd:     int32(fd),
+		Events: syscall.EPOLLIN,
+	}); err != nil {
+		log.Printf("epoll ctl failed: %v\n", err)
+		return
+	}
+
+	r.hdlrs.Store(int32(fd), hdlr)
+}
+
+func (r *Reactor) OnClose(fd int) {
+	if err := ioutil.EpollCtl(r.epfd, syscall.EPOLL_CTL_DEL, fd, nil); err != nil {
+		log.Printf("epoll ctl failed: %v\n", err)
+		return
+	}
+
+	r.hdlrs.Delete(int32(fd))
 }
 
 func (r *Reactor) Close() error {

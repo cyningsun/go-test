@@ -5,6 +5,10 @@ import (
 	"syscall"
 )
 
+var (
+	ECONNRESET = os.NewSyscallError("ECONNRESET", syscall.ECONNRESET)
+)
+
 func Socket(family, sotype, proto int) (fd int, err error) {
 	fd, err = syscall.Socket(family, sotype, proto)
 	if err != nil {
@@ -87,6 +91,10 @@ func Read(fd int, b []byte) (n int, err error) {
 			return 0, nil
 		}
 
+		if err == syscall.ECONNRESET {
+			return 0, ECONNRESET
+		}
+
 		return n, os.NewSyscallError("read", err)
 	}
 	return n, nil
@@ -97,6 +105,10 @@ func Write(fd int, b []byte) (n int, err error) {
 	if err != nil {
 		if err == syscall.EAGAIN {
 			return 0, nil
+		}
+
+		if err == syscall.ECONNRESET {
+			return 0, ECONNRESET
 		}
 
 		return n, os.NewSyscallError("write", err)
