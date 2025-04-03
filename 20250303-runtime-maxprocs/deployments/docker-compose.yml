@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  # 版本A: 默认GOMAXPROCS设置（使用宿主机CPU核数）
+  default-maxprocs:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+    container_name: default-maxprocs
+    ports:
+      - "8080:8080"
+    command: ["./server", "-port=8080"]
+    cpus: 1
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+        reservations:
+          cpus: '1'
+
+  # 版本B: 自动调整GOMAXPROCS设置（匹配容器CPU限制）
+  auto-maxprocs:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+    container_name: auto-maxprocs
+    ports:
+      - "8081:8081"
+    command: ["./server", "-port=8081", "-auto-adjust=true"]
+    cpus: 1
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+        reservations:
+          cpus: '1'
